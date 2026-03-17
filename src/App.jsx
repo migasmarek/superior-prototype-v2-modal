@@ -67,7 +67,7 @@ function GridPrice({ variants }) {
   const mono = { fontFamily: T.fontM, fontSize: 16, fontWeight: 400, lineHeight: 1, textTransform: "uppercase" };
   if (multi) {
     const prices = variants.map(v => effectivePrice(v)).sort((a, b) => a - b);
-    return <div style={{ ...mono, color: T.black }}>{fmt(prices[0])} \u2013 {fmt(prices[prices.length - 1])} czk</div>;
+    return <div style={{ ...mono, color: T.black }}>{fmt(prices[0])} {"\u2013"} {fmt(prices[prices.length - 1])} czk</div>;
   }
   const v = variants[0];
   if (v.salePrice !== null) {
