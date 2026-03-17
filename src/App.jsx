@@ -95,7 +95,7 @@ function FilterPanel({ onClose, priceFilter, onApply, onReset, filteredCount }) 
   const hasActive = priceFilter.min !== null || priceFilter.max !== null;
 
   return (
-    <div style={{ width: 300, flexShrink: 0, borderRight: "1px solid "+T.lightGrey, background: T.white, minHeight: "calc(100vh - 118px)", alignSelf: "stretch" }}>
+    <div style={{ position: "fixed", left: 0, top: 56, bottom: 0, width: 320, zIndex: 200, background: T.white, boxShadow: "4px 0 24px rgba(0,0,0,0.12)", overflowY: "auto" }}>
       <style>{`.pr-range{-webkit-appearance:none;position:absolute;width:100%;background:transparent;pointer-events:none;margin:0;height:20px;top:0;outline:none}.pr-range::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;margin-top:-7px}.pr-range::-webkit-slider-runnable-track{height:2px;background:transparent}.pr-range::-moz-range-thumb{pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;border:none}.pr-range::-moz-range-track{height:2px;background:transparent}`}</style>
       {/* Header */}
       <div style={{ padding: "24px 24px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid "+T.bgGrey }}>
@@ -578,8 +578,9 @@ export default function App() {
       {pg === "grid" && (
         <>
           <Filters filterOpen={filterOpen} onToggle={() => setFilterOpen(f => !f)} filteredCount={filteredBikes.length} />
-          <div style={{ display: "flex", alignItems: "flex-start" }}>
-            {filterOpen && (
+          {filterOpen && (
+            <>
+              <div onClick={() => setFilterOpen(false)} style={{ position: "fixed", inset: 0, top: 56, background: "rgba(0,0,0,0.25)", zIndex: 199 }} />
               <FilterPanel
                 onClose={() => setFilterOpen(false)}
                 priceFilter={priceFilter}
@@ -587,15 +588,13 @@ export default function App() {
                 onReset={() => setPriceFilter({ min: null, max: null })}
                 filteredCount={filteredBikes.length}
               />
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: filterOpen ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: 32, padding: "32px 32px 80px" }}>
-                {filteredBikes.map(b => {
-                  const passing = getPassingVariants(b);
-                  return <ProductCard key={b.id} bike={b} displayVariants={passing} onSelect={selBike} onCompare={toggleComp} isCompared={comp.includes(passing[0].id)} />;
-                })}
-              </div>
-            </div>
+            </>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, padding: "32px 32px 80px" }}>
+            {filteredBikes.map(b => {
+              const passing = getPassingVariants(b);
+              return <ProductCard key={b.id} bike={b} displayVariants={passing} onSelect={selBike} onCompare={toggleComp} isCompared={comp.includes(passing[0].id)} />;
+            })}
           </div>
         </>
       )}
