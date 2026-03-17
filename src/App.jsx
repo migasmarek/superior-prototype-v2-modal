@@ -302,21 +302,23 @@ function DetailPage({ variant, family, onBack }) {
 function Header({ cc }) {
   return (
     <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 64px", height: 56, borderBottom: "1px solid "+T.lightGrey, background: T.white, position: "sticky", top: 0, zIndex: 100 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
-        <span style={{ fontFamily: T.fontH, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em", color: T.black }}>superior.</span>
-        <nav style={{ display: "flex", gap: 28, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
-          <span style={{ cursor: "pointer", fontWeight: 570, color: T.black }}>Bikes</span>
-          <span style={{ cursor: "pointer" }}>E-bikes</span>
-          <span style={{ cursor: "pointer" }}>Retailers</span>
-        </nav>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 28, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
+      <nav style={{ display: "flex", gap: 48, alignItems: "center", fontFamily: T.fontB, fontSize: 14, color: T.black, lineHeight: 1 }}>
+        <span style={{ cursor: "pointer" }}>Bikes</span>
+        <span style={{ cursor: "pointer" }}>E-bikes</span>
+        <span style={{ cursor: "pointer" }}>Retailers</span>
+      </nav>
+      <span style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", fontFamily: T.fontH, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em", color: T.black, whiteSpace: "nowrap" }}>superior.</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 48, fontFamily: T.fontB, fontSize: 14, color: T.black, lineHeight: 1 }}>
         <span style={{ cursor: "pointer" }}>About</span>
         <span style={{ cursor: "pointer", position: "relative" }}>Comparison
           {cc > 0 && <span style={{ position: "absolute", top: -9, right: -18, background: T.black, color: T.white, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: T.fontM, fontSize: 11 }}>{cc}</span>}
         </span>
         <span style={{ cursor: "pointer" }}>Search</span>
-        <span style={{ fontFamily: T.fontM, fontSize: 12, color: T.midGrey, textTransform: "uppercase" }}>cz | en</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+          <span>CZ</span>
+          <span style={{ width: 1, height: 14, background: T.lightGrey, display: "inline-block" }} />
+          <span>EN</span>
+        </span>
       </div>
     </header>
   );
