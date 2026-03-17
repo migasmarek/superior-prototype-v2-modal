@@ -6,9 +6,9 @@ const IMG_BIKE_A = "/images/bike-a.png";
 const IMG_BIKE_B = "/images/bike-b.png";
 
 const T = {
-  black: "#000", darkGrey: "#5A5A5A", midGrey: "#999", lightGrey: "#E8E8E8",
-  bgGrey: "#F5F5F5", white: "#FFF", sale: "#E53935",
-  fontH: "'Inter', sans-serif", fontB: "'Inter', sans-serif", fontM: "'Space Mono', monospace",
+  black: "#000000", darkGrey: "#5a5a5a", midGrey: "#979797", lightGrey: "#d8d8d8",
+  bgGrey: "#f9f9f9", white: "#ffffff", sale: "#e10000", lightYellow: "#fff6d1",
+  fontH: "'DM Sans', sans-serif", fontB: "'DM Sans', sans-serif", fontM: "'Space Mono', monospace",
 };
 
 const BIKES = [
@@ -143,7 +143,7 @@ function ModalVariantColumn({ v, vi, total, onCompare, isCompared, onSelectVaria
       )}
       {/* CTA */}
       <button onClick={() => onSelectVariant(v)}
-        style={{ width: "100%", padding: "12px 14px", background: T.black, color: T.white, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, transition: "opacity 0.15s" }}
+        style={{ width: "100%", padding: "12px 14px", background: T.black, color: T.white, border: "none", borderRadius: 100, fontSize: 13, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, transition: "opacity 0.15s" }}
         onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"} onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}>
         <span>View detail</span><span>{"\u2192"}</span>
       </button>
@@ -276,9 +276,9 @@ function DetailPage({ variant, family, onBack }) {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-            <button style={{ width: "100%", padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 8, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "opacity 0.15s" }}
+            <button style={{ width: "100%", padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 100, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "opacity 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>Find a retailer</button>
-            <button style={{ width: "100%", padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 8, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
+            <button style={{ width: "100%", padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>+ Add to comparison</button>
           </div>
         </div>
@@ -301,7 +301,7 @@ function DetailPage({ variant, family, onBack }) {
 
 function Header({ cc }) {
   return (
-    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 32px", borderBottom: "1px solid "+T.lightGrey, background: T.white, position: "sticky", top: 0, zIndex: 100 }}>
+    <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 64px", height: 56, borderBottom: "1px solid "+T.lightGrey, background: T.white, position: "sticky", top: 0, zIndex: 100 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
         <span style={{ fontFamily: T.fontH, fontWeight: 700, fontSize: 20, letterSpacing: "-0.03em", color: T.black }}>superior.</span>
         <nav style={{ display: "flex", gap: 28, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
@@ -331,7 +331,7 @@ function Filters() {
         <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.midGrey }}>Showing {BIKES.length} bikes</span>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        {cats.map((c, i) => <span key={c} style={{ padding: "7px 18px", borderRadius: 20, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", background: i === 0 ? T.black : T.white, color: i === 0 ? T.white : T.darkGrey, border: i === 0 ? "1px solid "+T.black : "1px solid "+T.lightGrey }}>{c}</span>)}
+        {cats.map((c, i) => <span key={c} style={{ padding: "7px 18px", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", background: i === 0 ? T.black : T.white, color: i === 0 ? T.white : T.darkGrey, border: i === 0 ? "1px solid "+T.black : "1px solid "+T.lightGrey }}>{c}</span>)}
       </div>
       <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.darkGrey, cursor: "pointer" }}>Sort by Default {"\u2261"}</span>
     </div>
