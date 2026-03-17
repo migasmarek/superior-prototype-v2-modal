@@ -241,59 +241,136 @@ function VariantModal({ bike, onClose, onSelectVariant, compared, onCompare }) {
 
 // ─── Detail Page ────────────────────────────────────────────────────────────
 
-function DetailPage({ variant, family, onBack }) {
+function DetailPage({ variant, family, onBack, bike }) {
   const [sz, setSz] = useState(null);
+  const [selColor, setSelColor] = useState(variant.colors[0]);
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
+  const category = bike?.category || "";
+  const keySpecs = [variant.weight, variant.groupset, variant.wheels].filter(Boolean);
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 32px 64px" }}>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 570, color: T.darkGrey, padding: "28px 0 20px", fontFamily: T.fontB }}>{"\u2190"} Back to all bikes</button>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginBottom: 56 }}>
-        <div style={{ borderRadius: 10, overflow: "hidden", background: T.bgGrey, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-          <img src={variant.img} alt="" style={{ width: "100%", objectFit: "contain", mixBlendMode: "multiply" }} />
-          {onSale && <div style={{ position: "absolute", top: 16, left: 16 }}><Badge label={"-"+pct+"%"} variant="sale" /></div>}
+    <div>
+      {/* Sub-nav */}
+      <div style={{ position: "sticky", top: 56, zIndex: 99, height: 62, background: T.white, borderBottom: "1px solid "+T.lightGrey, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px" }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, display: "flex", alignItems: "center", gap: 8, padding: 0 }}>
+          {"\u2190"} {family}
+        </button>
+        <nav style={{ display: "flex", gap: 32, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
+          {["Overview", "Features", "Specifications", "Resources"].map(l => (
+            <span key={l} style={{ cursor: "pointer", lineHeight: 1 }}>{l}</span>
+          ))}
+        </nav>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button style={{ padding: "8px 20px", background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Find in stock</button>
+          <button style={{ padding: "8px 20px", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Compare</button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div>
-            <h1 style={{ fontFamily: T.fontH, fontSize: 32, fontWeight: 570, lineHeight: 1, color: T.black, marginBottom: 10 }}>{family}</h1>
-            <p style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, lineHeight: 1.5, color: T.darkGrey, margin: 0 }}>{variant.subtitle}</p>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>{variant.colors.map((c, i) => <ColorDot key={i} color={c} size={28} />)}</div>
+      </div>
+
+      {/* Two-column layout */}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        {/* Left: large image */}
+        <div style={{ flex: 1, background: "#fafafa", minHeight: "calc(100vh - 118px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 64, position: "relative" }}>
+          <img src={variant.img} alt="" style={{ maxWidth: "100%", maxHeight: "calc(100vh - 200px)", objectFit: "contain", mixBlendMode: "multiply" }} />
+          {onSale && <div style={{ position: "absolute", top: 24, left: 24 }}><Badge label={"-"+pct+"%"} variant="sale" /></div>}
+        </div>
+
+        {/* Right: config panel */}
+        <div style={{ width: 424, flexShrink: 0, position: "sticky", top: 118, maxHeight: "calc(100vh - 118px)", overflowY: "auto", padding: "40px 40px 64px", borderLeft: "1px solid "+T.lightGrey }}>
+          {/* Breadcrumb */}
+          {category && (
+            <div style={{ fontFamily: T.fontM, fontSize: 11, color: "#969696", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+              Road bikes {"\u00b7"} {category}
+            </div>
+          )}
+
+          {/* Bike name */}
+          <h1 style={{ fontFamily: T.fontH, fontSize: 40, fontWeight: 700, lineHeight: 1.05, color: T.black, letterSpacing: "-0.02em", margin: "0 0 16px" }}>{family}</h1>
+
+          {/* Price */}
           {onSale ? (
-            <div>
-              <div style={{ fontFamily: T.fontM, fontSize: 16, fontWeight: 400, lineHeight: 1, textDecoration: "line-through", color: T.midGrey, textTransform: "uppercase", marginBottom: 4 }}>{fmt(variant.price)} czk</div>
-              <div style={{ fontFamily: T.fontM, fontSize: 24, fontWeight: 700, lineHeight: 1, color: T.sale, textTransform: "uppercase" }}>{fmt(variant.salePrice)} czk</div>
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontFamily: T.fontM, fontSize: 15, fontWeight: 400, textDecoration: "line-through", color: T.midGrey, textTransform: "uppercase", marginBottom: 4 }}>{fmt(variant.price)} czk</div>
+              <div style={{ fontFamily: T.fontM, fontSize: 24, fontWeight: 700, color: T.sale, textTransform: "uppercase" }}>{fmt(variant.salePrice)} czk</div>
             </div>
           ) : (
-            <div style={{ fontFamily: T.fontM, fontSize: 24, fontWeight: 700, lineHeight: 1, color: T.black, textTransform: "uppercase" }}>{fmt(variant.price)} czk</div>
+            <div style={{ fontFamily: T.fontM, fontSize: 24, fontWeight: 700, color: T.black, textTransform: "uppercase", marginBottom: 28 }}>{fmt(variant.price)} czk</div>
           )}
-          <div>
-            <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.darkGrey, marginBottom: 10 }}>Size</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {(variant.sizes || ["S","M","L","XL"]).map(s => (
-                <span key={s} onClick={(e) => { e.stopPropagation(); setSz(s); }}
-                  style={{ padding: "9px 18px", border: sz === s ? "2px solid "+T.black : "1px solid "+T.lightGrey, borderRadius: 6, fontFamily: T.fontB, fontSize: 13, fontWeight: sz === s ? 570 : 400, cursor: "pointer", color: T.black, transition: "border-color 0.15s" }}>{s}</span>
+
+          {/* Description */}
+          <p style={{ fontFamily: T.fontB, fontSize: 14, lineHeight: 1.6, color: T.darkGrey, margin: "0 0 20px" }}>{variant.subtitle}</p>
+
+          {/* Key specs */}
+          {keySpecs.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              {keySpecs.map((spec, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, fontFamily: T.fontB, fontSize: 13, color: T.darkGrey, lineHeight: 1.8 }}>
+                  <span style={{ color: T.midGrey, flexShrink: 0 }}>{"\u2014"}</span>
+                  <span>{spec}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Color selector */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: T.fontB, fontSize: 11, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Color</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {variant.colors.map((c, i) => (
+                <span key={i} onClick={() => setSelColor(c)}
+                  style={{ display: "inline-block", padding: 3, borderRadius: "50%", border: selColor === c ? "2px solid "+T.black : "2px solid transparent", cursor: "pointer", transition: "border-color 0.15s" }}>
+                  <span style={{ display: "block", width: 22, height: 22, borderRadius: "50%", background: c, border: (c==="#d4d4d4"||c==="#ffffff") ? "1px solid "+T.lightGrey : "none" }} />
+                </span>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-            <button style={{ width: "100%", padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 100, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "opacity 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>Find a retailer</button>
-            <button style={{ width: "100%", padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 15, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>+ Add to comparison</button>
+
+          {/* Size selector */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontFamily: T.fontB, fontSize: 11, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Size</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {(variant.sizes || ["S","M","L","XL"]).map(s => (
+                <span key={s} onClick={() => setSz(s)}
+                  style={{ padding: "8px 16px", border: sz === s ? "2px solid "+T.black : "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: sz === s ? 570 : 400, cursor: "pointer", color: T.black, transition: "border-color 0.15s" }}>{s}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
+            <button style={{ flex: 1, padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "opacity 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>Find in stock</button>
+            <button style={{ width: 112, padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>Compare</button>
+          </div>
+
+          {/* Warranty */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 20, borderTop: "1px solid "+T.lightGrey }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 20, height: 20, borderRadius: "50%", background: T.bgGrey, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: T.darkGrey, flexShrink: 0 }}>{"\u2713"}</span>
+              <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>Crash replacement program</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 20, height: 20, borderRadius: "50%", background: T.bgGrey, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: T.darkGrey, flexShrink: 0 }}>{"\u2713"}</span>
+              <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>5-year warranty included</span>
+            </div>
           </div>
         </div>
       </div>
-      <h2 style={{ fontFamily: T.fontH, fontSize: 20, fontWeight: 570, lineHeight: 1, color: T.black, marginBottom: 16 }}>Specifications</h2>
-      <div style={{ border: "1px solid "+T.lightGrey, borderRadius: 10, overflow: "hidden" }}>
-        {SPEC_KEYS.map(({ key, label }, idx) => {
-          const val = variant[key]; if (!val) return null;
-          const d = Array.isArray(val) ? val.join(", ") : val;
-          return <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr", padding: "14px 20px", fontFamily: T.fontB, fontSize: 13, lineHeight: 1.5, borderTop: idx === 0 ? "none" : "1px solid "+T.bgGrey }}>
-            <div style={{ fontWeight: 570, color: T.darkGrey }}>{label}</div><div style={{ color: T.black }}>{d}</div>
-          </div>;
-        })}
+
+      {/* Specs table */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "64px 48px 80px" }}>
+        <h2 style={{ fontFamily: T.fontH, fontSize: 22, fontWeight: 700, color: T.black, marginBottom: 24 }}>Specifications</h2>
+        <div style={{ border: "1px solid "+T.lightGrey, borderRadius: 10, overflow: "hidden" }}>
+          {SPEC_KEYS.map(({ key, label }, idx) => {
+            const val = variant[key]; if (!val) return null;
+            const d = Array.isArray(val) ? val.join(", ") : val;
+            return <div key={key} style={{ display: "grid", gridTemplateColumns: "200px 1fr", padding: "14px 24px", fontFamily: T.fontB, fontSize: 13, lineHeight: 1.5, borderTop: idx === 0 ? "none" : "1px solid "+T.bgGrey }}>
+              <div style={{ fontWeight: 570, color: T.darkGrey }}>{label}</div>
+              <div style={{ color: T.black }}>{d}</div>
+            </div>;
+          })}
+        </div>
       </div>
     </div>
   );
@@ -373,7 +450,7 @@ export default function App() {
       {pg === "grid" && <><Filters /><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, padding: "32px 32px 80px", maxWidth: 1200, margin: "0 auto" }}>
         {BIKES.map(b => <ProductCard key={b.id} bike={b} onSelect={selBike} onCompare={toggleComp} isCompared={comp.includes(b.variants[0].id)} />)}
       </div></>}
-      {pg === "detail" && vari && <DetailPage variant={vari} family={bike?.family || vari.name} onBack={back} />}
+      {pg === "detail" && vari && <DetailPage variant={vari} family={bike?.family || vari.name} onBack={back} bike={bike} />}
       {modalBike && <VariantModal bike={modalBike} onClose={() => setModalBike(null)} onSelectVariant={selVar} compared={comp} onCompare={toggleComp} />}
     </div>
   );
