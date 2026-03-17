@@ -202,7 +202,7 @@ function ModalVariantColumn({ v, vi, total, onCompare, isCompared, onSelectVaria
   const pct = onSale ? salePct(v.price, v.salePrice) : 0;
 
   return (
-    <div style={{ borderRight: vi < total - 1 ? "1px solid "+T.lightGrey : "none", padding: vi === 0 ? "0 20px 0 0" : vi === total - 1 ? "0 0 0 20px" : "0 20px", opacity: passes === false ? 0.5 : 1 }}>
+    <div style={{ borderRight: vi < total - 1 ? "1px solid "+T.lightGrey : "none", padding: vi === 0 ? "0 20px 0 0" : vi === total - 1 ? "0 0 0 20px" : "0 20px" }}>
       {/* Image */}
       <div onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
         style={{ background: T.bgGrey, borderRadius: 10, overflow: "hidden", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, position: "relative" }}>
@@ -220,12 +220,13 @@ function ModalVariantColumn({ v, vi, total, onCompare, isCompared, onSelectVaria
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontFamily: T.fontM, fontSize: 14, fontWeight: 400, lineHeight: 1, textDecoration: "line-through", color: T.midGrey, textTransform: "uppercase" }}>{fmt(v.price)} czk</div>
           <div style={{ fontFamily: T.fontM, fontSize: 18, fontWeight: 700, lineHeight: 1, color: T.sale, textTransform: "uppercase", marginTop: 4 }}>{fmt(v.salePrice)} czk</div>
+          {passes === false && <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 400, color: T.midGrey, lineHeight: 1.4, marginTop: 6 }}>{"\u25cb"} Outside your price filter</div>}
         </div>
       ) : (
-        <div style={{ fontFamily: T.fontM, fontSize: 18, fontWeight: 700, lineHeight: 1, color: T.black, textTransform: "uppercase", marginBottom: 16 }}>{fmt(v.price)} czk</div>
-      )}
-      {passes === false && (
-        <div style={{ fontFamily: T.fontB, fontSize: 11, color: T.midGrey, marginBottom: 16, fontStyle: "italic" }}>Outside your price range</div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontFamily: T.fontM, fontSize: 18, fontWeight: 700, lineHeight: 1, color: T.black, textTransform: "uppercase" }}>{fmt(v.price)} czk</div>
+          {passes === false && <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 400, color: T.midGrey, lineHeight: 1.4, marginTop: 6 }}>{"\u25cb"} Outside your price filter</div>}
+        </div>
       )}
       {/* CTA */}
       <button onClick={() => onSelectVariant(v)}
