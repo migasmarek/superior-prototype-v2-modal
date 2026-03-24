@@ -651,9 +651,81 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
   );
 }
 
+// ─── Location Modal ──────────────────────────────────────────────────────────
+
+const COUNTRIES = ["Czech Republic","Slovakia","Germany","Austria","Poland","Hungary","France","Spain","Italy","United Kingdom","Netherlands","Belgium","Sweden","Norway","Denmark","Finland","Switzerland","Romania","Bulgaria","Croatia","Slovenia","Greece","Portugal"];
+const LANGUAGES = ["English","Čeština","Deutsch","Français","Español","Italiano"];
+
+function LocationModal({ onClose }) {
+  const [closeBtnHov, setCloseBtnHov] = useState(false);
+  const [confirmHov, setConfirmHov] = useState(false);
+  const overlayRef = useRef(null);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
+
+  const selectStyle = {
+    width: "100%", border: "none", borderBottom: "2px solid "+T.black,
+    padding: "12px 0", fontFamily: T.fontB, fontSize: 16, fontWeight: 570,
+    color: T.black, background: "transparent", cursor: "pointer",
+    appearance: "none", WebkitAppearance: "none", outline: "none",
+  };
+
+  return (
+    <div ref={overlayRef} onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.2s ease" }}>
+      <div style={{ background: T.white, borderRadius: 16, maxWidth: 480, width: "90%", padding: 32, boxShadow: "0 24px 80px rgba(0,0,0,0.2)", position: "relative", animation: "slideUp 0.25s ease" }}>
+        {/* Close button */}
+        <button onClick={onClose}
+          onMouseEnter={() => setCloseBtnHov(true)} onMouseLeave={() => setCloseBtnHov(false)}
+          style={{ position: "absolute", top: 20, right: 20, width: 36, height: 36, borderRadius: "50%", border: "1px solid "+(closeBtnHov ? T.black : T.lightGrey), background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: T.darkGrey, transition: "border-color 0.15s" }}>
+          {"\u2715"}
+        </button>
+
+        {/* Title */}
+        <h2 style={{ fontFamily: T.fontB, fontSize: 22, fontWeight: 570, color: T.black, margin: "0 0 8px", paddingRight: 48 }}>Select your location and language</h2>
+        <p style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.darkGrey, lineHeight: 1.5, margin: "0 0 28px" }}>Pricing and retailer availability vary by region.</p>
+
+        {/* Country */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Country</div>
+          <div style={{ position: "relative" }}>
+            <select defaultValue="Czech Republic" style={selectStyle}>
+              {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+            </select>
+            <span style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", color: T.darkGrey, pointerEvents: "none", fontSize: 12 }}>{"\u2228"}</span>
+          </div>
+        </div>
+
+        {/* Language */}
+        <div>
+          <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Language</div>
+          <div style={{ position: "relative" }}>
+            <select defaultValue="English" style={selectStyle}>
+              {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+            </select>
+            <span style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", color: T.darkGrey, pointerEvents: "none", fontSize: 12 }}>{"\u2228"}</span>
+          </div>
+        </div>
+
+        {/* Confirm */}
+        <button onClick={onClose}
+          onMouseEnter={() => setConfirmHov(true)} onMouseLeave={() => setConfirmHov(false)}
+          style={{ width: "100%", marginTop: 32, padding: 16, background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", opacity: confirmHov ? 0.85 : 1, transition: "opacity 0.15s" }}>
+          Confirm
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Header + Filters ───────────────────────────────────────────────────────
 
-function Header({ cc }) {
+function Header({ cc, onOpenLocation }) {
   return (
     <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 64px", height: 56, borderBottom: "1px solid "+T.lightGrey, background: T.white, position: "sticky", top: 0, zIndex: 100 }}>
       <nav style={{ display: "flex", gap: 48, alignItems: "center", fontFamily: T.fontB, fontSize: 14, color: T.black, lineHeight: 1 }}>
@@ -668,10 +740,9 @@ function Header({ cc }) {
           {cc > 0 && <span style={{ position: "absolute", top: -9, right: -18, background: T.black, color: T.white, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: T.fontM, fontSize: 11 }}>{cc}</span>}
         </span>
         <span style={{ cursor: "pointer" }}>Search</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <span>CZ</span>
-          <span style={{ width: 1, height: 14, background: T.lightGrey, display: "inline-block" }} />
-          <span>EN</span>
+        <span onClick={onOpenLocation} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", cursor: "pointer", gap: 2 }}>
+          <span style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 400, color: T.midGrey, lineHeight: 1 }}>Location</span>
+          <span style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, lineHeight: 1 }}>CZ / EN</span>
         </span>
       </div>
     </header>
@@ -716,6 +787,7 @@ export default function App() {
   const [comp, setComp] = useState([]);
   const [modalBike, setModalBike] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [locationModal, setLocationModal] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [pendingFilters, setPendingFilters] = useState(EMPTY_FILTERS);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -792,7 +864,8 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: T.fontB, background: T.white, minHeight: "100vh" }}>
-      <Header cc={comp.length} />
+      <Header cc={comp.length} onOpenLocation={() => setLocationModal(true)} />
+      {locationModal && <LocationModal onClose={() => setLocationModal(false)} />}
       {pg === "grid" && (
         <>
           <Toolbar
