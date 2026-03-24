@@ -688,6 +688,14 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
   const stickyHasStock = sz ? getSizeAvailability(colorId, sz) === "in-stock" : false;
   const effectiveVariantPrice = variant.salePrice !== null ? variant.salePrice : variant.price;
   const handleStickyFindDealer = () => { setStickyToast(true); setTimeout(() => setStickyToast(false), 2500); };
+  const handleStickyReserve = () => {
+    const { dealers } = getDealersForSelection(colorId, sz);
+    if (dealers.length === 1) {
+      setReserveDealer(dealers[0]);
+    } else {
+      dealerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  };
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
   const category = bike?.category || "";
@@ -714,7 +722,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
                 {family} {"\u00b7"} {colorName}, {sz} {"\u00b7"} {fmt(effectiveVariantPrice)} CZK
               </span>
               {stickyHasStock ? (
-                <button onClick={() => dealerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+                <button onClick={handleStickyReserve}
                   style={{ padding: "8px 16px", background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Reserve {"\u2192"}
                 </button>
