@@ -122,21 +122,24 @@ function ClearLink({ onClear }) {
 function AccordionSection({ title, expanded, onToggle, summary, onClear, children }) {
   return (
     <div style={{ borderBottom: "1px solid "+T.lightGrey }}>
-      {/* Title row — +/− always toggles */}
-      <div onClick={onToggle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, paddingBottom: (!expanded && summary) ? 8 : 20, cursor: "pointer" }}>
-        <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, lineHeight: 1.3 }}>{title}</div>
-        <button onClick={e => { e.stopPropagation(); onToggle(); }}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: T.black, padding: "0 0 0 16px", lineHeight: 1, flexShrink: 0 }}>
-          {expanded ? "\u2212" : "+"}
-        </button>
-      </div>
-      {/* Collapsed + has selection: summary left, Clear right */}
-      {!expanded && summary && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 20 }}>
-          <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 400, color: T.midGrey, marginRight: 16 }}>{summary}</div>
-          <ClearLink onClear={onClear} />
+      {/* Entire header area is one click target for expand/collapse */}
+      <div onClick={onToggle} style={{ paddingTop: 20, paddingBottom: 20, cursor: "pointer" }}>
+        {/* Title row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: (!expanded && summary) ? 8 : 0 }}>
+          <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, lineHeight: 1.3 }}>{title}</div>
+          <button onClick={e => e.stopPropagation()}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: T.black, padding: "0 0 0 16px", lineHeight: 1, flexShrink: 0, pointerEvents: "none" }}>
+            {expanded ? "\u2212" : "+"}
+          </button>
         </div>
-      )}
+        {/* Collapsed + has selection: summary left, Clear right */}
+        {!expanded && summary && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 400, color: T.midGrey, marginRight: 16 }}>{summary}</div>
+            <ClearLink onClear={onClear} />
+          </div>
+        )}
+      </div>
       {/* Expanded: content, then Clear below if selection active */}
       {expanded && (
         <div style={{ paddingBottom: 24 }}>
