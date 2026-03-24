@@ -681,8 +681,13 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
   const [sz, setSz] = useState(null);
   const [selColor, setSelColor] = useState(variant.colors[0]);
   const [reserveDealer, setReserveDealer] = useState(null);
+  const [stickyToast, setStickyToast] = useState(false);
+  const dealerSectionRef = useRef(null);
   const colorId = COLOR_ID_MAP[selColor] || "unknown";
   const colorName = COLOR_MAP[selColor] || selColor;
+  const stickyHasStock = sz ? getSizeAvailability(colorId, sz) === "in-stock" : false;
+  const effectiveVariantPrice = variant.salePrice !== null ? variant.salePrice : variant.price;
+  const handleStickyFindDealer = () => { setStickyToast(true); setTimeout(() => setStickyToast(false), 2500); };
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
   const category = bike?.category || "";
@@ -691,6 +696,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
 
   return (
     <div>
+      <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
       {/* Sub-nav */}
       <div style={{ position: "sticky", top: 56, zIndex: 99, height: 62, background: T.white, borderBottom: "1px solid "+T.lightGrey, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, display: "flex", alignItems: "center", gap: 8, padding: 0 }}>
@@ -701,8 +707,26 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
             <span key={l} style={{ cursor: "pointer", lineHeight: 1 }}>{l}</span>
           ))}
         </nav>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ padding: "8px 20px", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Compare</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {sz && (
+            <>
+              <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 500, color: T.black, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 300 }}>
+                {family} {"\u00b7"} {colorName}, {sz} {"\u00b7"} {fmt(effectiveVariantPrice)} CZK
+              </span>
+              {stickyHasStock ? (
+                <button onClick={() => dealerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+                  style={{ padding: "8px 16px", background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  Reserve {"\u2192"}
+                </button>
+              ) : (
+                <button onClick={handleStickyFindDealer}
+                  style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  Find a dealer {"\u2192"}
+                </button>
+              )}
+            </>
+          )}
+          <button style={{ padding: "8px 20px", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", flexShrink: 0 }}>Compare</button>
         </div>
       </div>
 
@@ -823,11 +847,25 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
             </div>
           </div>
 
+          {/* Choose size prompt — shown when no size selected */}
+          {!sz && (
+            <div style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.midGrey, marginBottom: 28, animation: "fadeIn 0.2s ease" }}>
+              Choose your size to check availability
+            </div>
+          )}
+
           {/* Dealer list — expands when size is selected */}
           {sz && (
-            <div style={{ marginBottom: 24 }}>
+            <div ref={dealerSectionRef} style={{ marginBottom: 24 }}>
               <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Available at dealers</div>
               <DealerList colorId={colorId} colorName={colorName} sizeId={sz} onReserve={setReserveDealer} />
+            </div>
+          )}
+
+          {/* Sticky bar toast */}
+          {stickyToast && (
+            <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: T.black, color: T.white, padding: "12px 24px", borderRadius: 8, fontFamily: T.fontB, fontSize: 14, zIndex: 2000, pointerEvents: "none" }}>
+              Dealer finder coming soon
             </div>
           )}
 
