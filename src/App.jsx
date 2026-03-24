@@ -58,7 +58,7 @@ const COLOR_MAP = {
   "#cc0000": "Red", "#d4d4d4": "White", "#4a1520": "Brown",
 };
 const COLOR_ID_MAP = {
-  "#cc0000": "red", "#1a1a2e": "blue", "#d4d4d4": "white",
+  "#cc0000": "red", "#1a1a2e": "black", "#d4d4d4": "grey",
   "#111": "black", "#4a1520": "brown",
 };
 const getMaterial = (frame) => {
@@ -498,66 +498,79 @@ function VariantModal({ bike, onClose, onSelectVariant, compared, onCompare, var
 // ─── Dealer + Reservation Components ────────────────────────────────────────
 
 function DealerCard({ dealer, colorName, sizeId, onReserve }) {
-  const available = dealer.availability === "available";
   return (
     <div style={{ border: "1px solid #E8E8E8", borderRadius: 8, padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
         <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black }}>{dealer.name}</div>
-        {available ? (
-          <button onClick={() => onReserve(dealer)}
-            style={{ background: T.black, color: T.white, border: "none", borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-            Reserve {"\u2192"}
-          </button>
-        ) : (
-          <a href={"tel:"+dealer.phone}
-            style={{ background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, textDecoration: "none", whiteSpace: "nowrap" }}>
-            Contact {"\u2192"}
-          </a>
-        )}
+        <button onClick={() => onReserve(dealer)}
+          style={{ background: T.black, color: T.white, border: "none", borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+          Reserve {"\u2192"}
+        </button>
       </div>
       <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, marginBottom: 3 }}>{"\ud83d\udccd"} {dealer.address}</div>
       <a href={"tel:"+dealer.phone} style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, textDecoration: "none", display: "block", marginBottom: 10 }}>{"\ud83d\udcde"} {dealer.phone}</a>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: available ? T.green : T.midGrey, flexShrink: 0 }} />
-        {available ? (
-          <>
-            <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.green }}>In stock</span>
-            <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>{"\u00b7"} {colorName}, Size {sizeId}</span>
-          </>
-        ) : (
-          <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>Availability unknown — contact dealer</span>
-        )}
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, flexShrink: 0 }} />
+        <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.green }}>In stock</span>
+        <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>{"\u00b7"} {colorName}, Size {sizeId}</span>
       </div>
     </div>
   );
 }
 
+function FindDealerLink({ onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <span onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, cursor: "pointer", textDecoration: hov ? "underline" : "none" }}>
+      Find a dealer {"\u2192"}
+    </span>
+  );
+}
+
 function DealerList({ colorId, colorName, sizeId, onReserve }) {
-  const [showAll, setShowAll] = useState(false);
-  const { dealers, allConnectedOutOfStock } = getDealersForSelection(colorId, sizeId);
-  const displayDealers = allConnectedOutOfStock
-    ? dealers.filter(d => d.availability === "unknown")
-    : dealers.filter(d => d.availability !== "unavailable");
-  const visible = showAll ? displayDealers : displayDealers.slice(0, 4);
+  const [toast, setToast] = useState(false);
+  const { dealers, allConnectedOutOfStock, hasNoDealerData } = getDealersForSelection(colorId, sizeId);
+
+  const handleFindDealer = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 2500);
+  };
 
   return (
-    <div style={{ marginTop: 16 }}>
-      {allConnectedOutOfStock && (
-        <div style={{ background: T.bgGrey, padding: 16, borderRadius: 8, marginBottom: 12, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, lineHeight: 1.5 }}>
-          This combination is not currently available at dealers with live stock data. It may still be available — contact a dealer directly.
+    <div style={{ marginTop: 16, position: "relative" }}>
+      {/* Dealer cards — only connected dealers with confirmed stock */}
+      {dealers.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {dealers.map(d => <DealerCard key={d.id} dealer={d} colorName={colorName} sizeId={sizeId} onReserve={onReserve} />)}
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {visible.map(d => <DealerCard key={d.id} dealer={d} colorName={colorName} sizeId={sizeId} onReserve={onReserve} />)}
-      </div>
-      {!showAll && displayDealers.length > 4 && (
-        <span onClick={() => setShowAll(true)}
-          style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 500, color: T.black, cursor: "pointer", display: "inline-block", marginTop: 10 }}
-          onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
-          onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}>
-          Show all {displayDealers.length} dealers
-        </span>
+
+      {/* Fallback block */}
+      {dealers.length > 0 ? (
+        // Some dealers have stock — show brief inline note below cards
+        <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>This bike may also be available at other authorized dealers.</span>
+          <FindDealerLink onClick={handleFindDealer} />
+        </div>
+      ) : (
+        // No dealer cards — show message box
+        <div style={{ background: T.bgGrey, padding: 20, borderRadius: 8 }}>
+          <p style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.darkGrey, lineHeight: 1.6, margin: "0 0 12px" }}>
+            {hasNoDealerData
+              ? "We don\u2019t have live stock data for this combination. It may be available at an authorized dealer."
+              : "This combination is not currently in stock at dealers with live availability. It may still be available at other authorized dealers."}
+          </p>
+          <FindDealerLink onClick={handleFindDealer} />
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: T.black, color: T.white, padding: "12px 24px", borderRadius: 8, fontFamily: T.fontB, fontSize: 14, zIndex: 2000, pointerEvents: "none" }}>
+          Dealer finder coming soon
+        </div>
       )}
     </div>
   );
@@ -689,7 +702,6 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           ))}
         </nav>
         <div style={{ display: "flex", gap: 8 }}>
-          <button style={{ padding: "8px 20px", background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Find in stock</button>
           <button style={{ padding: "8px 20px", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Compare</button>
         </div>
       </div>
@@ -803,7 +815,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
                       {s}
                     </span>
                     {inStock && (
-                      <span style={{ position: "absolute", top: -2, right: -2, width: 6, height: 6, borderRadius: "50%", background: T.green, border: "1.5px solid "+T.white, pointerEvents: "none" }} />
+                      <span style={{ position: "absolute", top: -4, right: -4, width: 10, height: 10, borderRadius: "50%", background: T.green, border: "2px solid "+T.white, pointerEvents: "none" }} />
                     )}
                   </div>
                 );
@@ -821,9 +833,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
 
           {/* CTAs */}
           <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
-            <button style={{ flex: 1, padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "opacity 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>Find in stock</button>
-            <button style={{ width: 112, padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
+            <button style={{ flex: 1, padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>Compare</button>
           </div>
 
