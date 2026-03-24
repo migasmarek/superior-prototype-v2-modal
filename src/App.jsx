@@ -108,23 +108,46 @@ function GridPrice({ variants }) {
 
 // ─── Accordion Section ───────────────────────────────────────────────────────
 
+function ClearLink({ onClear }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <span onClick={e => { e.stopPropagation(); onClear(); }}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: hov ? T.black : T.midGrey, cursor: "pointer", flexShrink: 0 }}>
+      Clear
+    </span>
+  );
+}
+
 function AccordionSection({ title, expanded, onToggle, summary, onClear, children }) {
   return (
     <div style={{ borderBottom: "1px solid "+T.lightGrey }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 0", cursor: "pointer" }} onClick={onToggle}>
-        <div>
-          <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, lineHeight: 1.3 }}>{title}</div>
-          {!expanded && summary && (
-            <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 400, color: T.midGrey, marginTop: 4 }}>{summary}</div>
-          )}
-        </div>
-        <button
-          onClick={e => { e.stopPropagation(); if (!expanded && summary) { onClear(); } else { onToggle(); } }}
+      {/* Title row — +/− always toggles */}
+      <div onClick={onToggle} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, paddingBottom: (!expanded && summary) ? 8 : 20, cursor: "pointer" }}>
+        <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, lineHeight: 1.3 }}>{title}</div>
+        <button onClick={e => { e.stopPropagation(); onToggle(); }}
           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: T.black, padding: "0 0 0 16px", lineHeight: 1, flexShrink: 0 }}>
-          {!expanded && summary ? "\u2715" : expanded ? "\u2212" : "+"}
+          {expanded ? "\u2212" : "+"}
         </button>
       </div>
-      {expanded && <div style={{ paddingBottom: 24 }}>{children}</div>}
+      {/* Collapsed + has selection: summary left, Clear right */}
+      {!expanded && summary && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 20 }}>
+          <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 400, color: T.midGrey, marginRight: 16 }}>{summary}</div>
+          <ClearLink onClear={onClear} />
+        </div>
+      )}
+      {/* Expanded: content, then Clear below if selection active */}
+      {expanded && (
+        <div style={{ paddingBottom: 24 }}>
+          {children}
+          {summary && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+              <ClearLink onClear={onClear} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
