@@ -52,6 +52,28 @@ const effectivePrice = (v) => v.salePrice !== null ? v.salePrice : v.price;
 const familyHasSale = (bike) => bike.variants.some(v => v.salePrice !== null);
 const salePct = (orig, sale) => Math.round((1 - sale / orig) * 100);
 
+const COLOR_MAP = {
+  "#000": "Black", "#111": "Black", "#1a1a2e": "Black",
+  "#cc0000": "Red", "#d4d4d4": "White", "#4a1520": "Brown",
+};
+const getMaterial = (frame) => {
+  if (!frame) return "Other";
+  const f = frame.toLowerCase();
+  if (f.includes("carbon")) return "Carbon";
+  if (f.includes("alloy") || f.includes("aluminum")) return "Alloy";
+  return "Other";
+};
+const FILTER_SIZES = ["XS","S","M","L","XL","XXL"];
+const FILTER_COLORS_LIST = [
+  { name: "Black", hex: "#1a1a2e" },
+  { name: "Red", hex: "#cc0000" },
+  { name: "White", hex: "#d4d4d4" },
+  { name: "Brown", hex: "#4a1520" },
+];
+const FILTER_MATERIALS = ["Carbon","Alloy"];
+const FRAME_SHAPES = [...new Set(BIKES.map(b => b.category))];
+const EMPTY_FILTERS = { price: { min: null, max: null }, sizes: [], materials: [], colors: [], frameShape: null, sort: "recommended" };
+
 function ColorDot({ color, size = 14 }) {
   const light = color==="#d4d4d4"||color==="#ffffff";
   return <span style={{display:"inline-block",width:size,height:size,borderRadius:"50%",background:color,border:light?"1px solid "+T.lightGrey:"1px solid transparent",flexShrink:0}} />;
@@ -84,80 +106,197 @@ function GridPrice({ variants }) {
   return <div style={{ ...mono, color: T.black }}>{fmt(v.price)} czk</div>;
 }
 
-// ─── Filter Panel ───────────────────────────────────────────────────────────
+// ─── Accordion Section ───────────────────────────────────────────────────────
 
-function FilterPanel({ onClose, priceFilter, onApply, onReset, filteredCount }) {
-  const [localMin, setLocalMin] = useState(priceFilter.min ?? PRICE_MIN);
-  const [localMax, setLocalMax] = useState(priceFilter.max ?? PRICE_MAX);
-
-  const pctMin = ((localMin - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
-  const pctMax = ((localMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
-  const hasActive = priceFilter.min !== null || priceFilter.max !== null;
-
+function AccordionSection({ title, expanded, onToggle, summary, onClear, children }) {
   return (
-    <div style={{ position: "fixed", left: 0, top: 56, bottom: 0, width: 320, zIndex: 200, background: T.white, boxShadow: "4px 0 24px rgba(0,0,0,0.12)", overflowY: "auto" }}>
-      <style>{`.pr-range{-webkit-appearance:none;position:absolute;width:100%;background:transparent;pointer-events:none;margin:0;height:20px;top:0;outline:none}.pr-range::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;margin-top:-7px}.pr-range::-webkit-slider-runnable-track{height:2px;background:transparent}.pr-range::-moz-range-thumb{pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;border:none}.pr-range::-moz-range-track{height:2px;background:transparent}`}</style>
-      {/* Header */}
-      <div style={{ padding: "24px 24px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid "+T.bgGrey }}>
+    <div style={{ borderBottom: "1px solid "+T.lightGrey }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 0", cursor: "pointer" }} onClick={onToggle}>
         <div>
-          <div style={{ fontFamily: T.fontH, fontSize: 18, fontWeight: 700, color: T.black, marginBottom: 4 }}>Filter products</div>
-          <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.midGrey }}>Showing {filteredCount} bike{filteredCount !== 1 ? "s" : ""}</div>
-        </div>
-        <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid "+T.lightGrey, background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: T.darkGrey, flexShrink: 0, transition: "border-color 0.15s" }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>{"\u2715"}</button>
-      </div>
-
-      {/* Price section */}
-      <div style={{ padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <span style={{ fontFamily: T.fontM, fontSize: 12, fontWeight: 400, textTransform: "uppercase", letterSpacing: "0.08em", color: T.black }}>Price</span>
-          {hasActive && (
-            <button onClick={() => { setLocalMin(PRICE_MIN); setLocalMax(PRICE_MAX); onReset(); }}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: T.midGrey, lineHeight: 1, padding: 0 }}>{"\u2715"}</button>
+          <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, lineHeight: 1.3 }}>{title}</div>
+          {!expanded && summary && (
+            <div style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 400, color: T.midGrey, marginTop: 4 }}>{summary}</div>
           )}
         </div>
+        <button
+          onClick={e => { e.stopPropagation(); if (!expanded && summary) { onClear(); } else { onToggle(); } }}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: T.black, padding: "0 0 0 16px", lineHeight: 1, flexShrink: 0 }}>
+          {!expanded && summary ? "\u2715" : expanded ? "\u2212" : "+"}
+        </button>
+      </div>
+      {expanded && <div style={{ paddingBottom: 24 }}>{children}</div>}
+    </div>
+  );
+}
 
-        {/* Dual-handle range slider */}
-        <div style={{ position: "relative", height: 20, marginBottom: 20 }}>
-          <div style={{ position: "absolute", top: 9, left: 0, right: 0, height: 2, background: T.lightGrey, borderRadius: 1 }} />
-          <div style={{ position: "absolute", top: 9, left: pctMin+"%", right: (100 - pctMax)+"%", height: 2, background: T.black, borderRadius: 1 }} />
-          <input className="pr-range" type="range" min={PRICE_MIN} max={PRICE_MAX} step={1000}
-            value={localMin}
-            onChange={e => { const v = Math.min(Number(e.target.value), localMax - 5000); setLocalMin(Math.max(PRICE_MIN, v)); }}
-            style={{ zIndex: localMin > PRICE_MIN + (PRICE_MAX - PRICE_MIN) * 0.5 ? 5 : 3 }} />
-          <input className="pr-range" type="range" min={PRICE_MIN} max={PRICE_MAX} step={1000}
-            value={localMax}
-            onChange={e => { const v = Math.max(Number(e.target.value), localMin + 5000); setLocalMax(Math.min(PRICE_MAX, v)); }}
-            style={{ zIndex: localMin > PRICE_MIN + (PRICE_MAX - PRICE_MIN) * 0.5 ? 3 : 5 }} />
+// ─── Filter Drawer ────────────────────────────────────────────────────────────
+
+function FilterDrawer({ open, onClose, pendingFilters, onChange, liveCount, onApply, onClearPending }) {
+  const [expanded, setExpanded] = useState([]);
+  const toggle = (key) => setExpanded(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  const priceMin = pendingFilters.price.min ?? PRICE_MIN;
+  const priceMax = pendingFilters.price.max ?? PRICE_MAX;
+  const pctMin = ((priceMin - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
+  const pctMax = ((priceMax - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
+
+  const setPrice = (min, max) => onChange({ ...pendingFilters, price: { min: min === PRICE_MIN ? null : min, max: max === PRICE_MAX ? null : max } });
+  const toggleMulti = (key, val) => {
+    const arr = pendingFilters[key];
+    onChange({ ...pendingFilters, [key]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] });
+  };
+
+  const summary = {
+    sort: pendingFilters.sort !== "recommended" ? ({ "price-desc": "Price (High to Low)", "price-asc": "Price (Low to High)" })[pendingFilters.sort] : null,
+    price: (pendingFilters.price.min !== null || pendingFilters.price.max !== null) ? `${fmt(priceMin)} \u2013 ${fmt(priceMax)} CZK` : null,
+    sizes: pendingFilters.sizes.length > 0 ? pendingFilters.sizes.join(", ") : null,
+    materials: pendingFilters.materials.length > 0 ? pendingFilters.materials.join(", ") : null,
+    colors: pendingFilters.colors.length > 0 ? pendingFilters.colors.join(", ") : null,
+    frameShape: pendingFilters.frameShape || null,
+  };
+
+  const clearSection = (key) => {
+    if (key === "sort") onChange({ ...pendingFilters, sort: "recommended" });
+    else if (key === "price") onChange({ ...pendingFilters, price: { min: null, max: null } });
+    else if (key === "frameShape") onChange({ ...pendingFilters, frameShape: null });
+    else onChange({ ...pendingFilters, [key]: [] });
+  };
+
+  const hasAnyPending = Object.values(summary).some(Boolean);
+  const SORT_OPTS = [["recommended","Recommended"],["price-desc","Price (High to Low)"],["price-asc","Price (Low to High)"]];
+
+  return (
+    <>
+      <style>{`.pr-range{-webkit-appearance:none;position:absolute;width:100%;background:transparent;pointer-events:none;margin:0;height:20px;top:0;outline:none}.pr-range::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;margin-top:-7px}.pr-range::-webkit-slider-runnable-track{height:2px;background:transparent}.pr-range::-moz-range-thumb{pointer-events:all;width:16px;height:16px;background:#000;border-radius:50%;cursor:pointer;border:none}.pr-range::-moz-range-track{height:2px;background:transparent}`}</style>
+      {/* Overlay */}
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, top: 56, zIndex: 299, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(8px)", pointerEvents: open ? "all" : "none", opacity: open ? 1 : 0, transition: "opacity 0.2s" }} />
+      {/* Drawer */}
+      <div style={{ position: "fixed", left: 0, top: 56, bottom: 0, width: 380, zIndex: 300, background: T.white, transform: open ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease-out", display: "flex", flexDirection: "column", boxShadow: "4px 0 32px rgba(0,0,0,0.12)" }}>
+        {/* Sticky header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid "+T.lightGrey, flexShrink: 0 }}>
+          <span style={{ fontFamily: T.fontB, fontSize: 20, fontWeight: 570, color: T.black }}>Filter & Sort</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.midGrey }}>Showing {liveCount} bikes</span>
+            <button onClick={onClose}
+              style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid "+T.lightGrey, background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: T.darkGrey, transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.black}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>{"\u2715"}</button>
+          </div>
         </div>
 
-        {/* Input fields */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: T.fontB, fontSize: 12, color: T.darkGrey, width: 28, flexShrink: 0 }}>From</span>
-            <input type="number" value={localMin}
-              onChange={e => { const v = Number(e.target.value); if (!isNaN(v)) setLocalMin(Math.max(PRICE_MIN, Math.min(v, localMax - 5000))); }}
-              style={{ flex: 1, border: "none", borderBottom: "1px solid "+T.lightGrey, outline: "none", fontFamily: T.fontM, fontSize: 13, padding: "4px 0", background: "transparent", color: T.black, minWidth: 0 }} />
-            <span style={{ fontFamily: T.fontB, fontSize: 12, color: T.darkGrey, flexShrink: 0 }}>CZK</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: T.fontB, fontSize: 12, color: T.darkGrey, width: 28, flexShrink: 0 }}>To</span>
-            <input type="number" value={localMax}
-              onChange={e => { const v = Number(e.target.value); if (!isNaN(v)) setLocalMax(Math.min(PRICE_MAX, Math.max(v, localMin + 5000))); }}
-              style={{ flex: 1, border: "none", borderBottom: "1px solid "+T.lightGrey, outline: "none", fontFamily: T.fontM, fontSize: 13, padding: "4px 0", background: "transparent", color: T.black, minWidth: 0 }} />
-            <span style={{ fontFamily: T.fontB, fontSize: 12, color: T.darkGrey, flexShrink: 0 }}>CZK</span>
-          </div>
+        {/* Scrollable sections */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 24px" }}>
+          {/* Sort */}
+          <AccordionSection title="Sort" expanded={expanded.includes("sort")} onToggle={() => toggle("sort")} summary={summary.sort} onClear={() => clearSection("sort")}>
+            {SORT_OPTS.map(([val, label]) => {
+              const sel = pendingFilters.sort === val;
+              return (
+                <div key={val} onClick={() => onChange({ ...pendingFilters, sort: val })} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
+                  <div style={{ width: 16, height: 16, borderRadius: "50%", border: sel ? "5px solid "+T.black : "1.5px solid "+T.lightGrey, flexShrink: 0, transition: "border 0.1s" }} />
+                  <span style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black }}>{label}</span>
+                </div>
+              );
+            })}
+          </AccordionSection>
+
+          {/* Price */}
+          <AccordionSection title="Price" expanded={expanded.includes("price")} onToggle={() => toggle("price")} summary={summary.price} onClear={() => clearSection("price")}>
+            <div style={{ position: "relative", height: 20, marginBottom: 20 }}>
+              <div style={{ position: "absolute", top: 9, left: 0, right: 0, height: 2, background: T.lightGrey, borderRadius: 1 }} />
+              <div style={{ position: "absolute", top: 9, left: pctMin+"%", right: (100-pctMax)+"%", height: 2, background: T.black, borderRadius: 1 }} />
+              <input className="pr-range" type="range" min={PRICE_MIN} max={PRICE_MAX} step={1000} value={priceMin}
+                onChange={e => setPrice(Math.max(PRICE_MIN, Math.min(Number(e.target.value), priceMax - 5000)), priceMax)}
+                style={{ zIndex: priceMin > PRICE_MIN + (PRICE_MAX - PRICE_MIN) * 0.5 ? 5 : 3 }} />
+              <input className="pr-range" type="range" min={PRICE_MIN} max={PRICE_MAX} step={1000} value={priceMax}
+                onChange={e => setPrice(priceMin, Math.min(PRICE_MAX, Math.max(Number(e.target.value), priceMin + 5000)))}
+                style={{ zIndex: priceMin > PRICE_MIN + (PRICE_MAX - PRICE_MIN) * 0.5 ? 3 : 5 }} />
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1, border: "1px solid "+T.lightGrey, borderRadius: 6, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="number" value={priceMin} onChange={e => { const v = Number(e.target.value); if (!isNaN(v)) setPrice(Math.max(PRICE_MIN, Math.min(v, priceMax - 5000)), priceMax); }}
+                  style={{ flex: 1, border: "none", outline: "none", fontFamily: T.fontB, fontSize: 14, color: T.black, background: "transparent", minWidth: 0 }} />
+                <span style={{ fontFamily: T.fontB, fontSize: 14, color: T.midGrey, flexShrink: 0 }}>CZK</span>
+              </div>
+              <div style={{ flex: 1, border: "1px solid "+T.lightGrey, borderRadius: 6, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="number" value={priceMax} onChange={e => { const v = Number(e.target.value); if (!isNaN(v)) setPrice(priceMin, Math.min(PRICE_MAX, Math.max(v, priceMin + 5000))); }}
+                  style={{ flex: 1, border: "none", outline: "none", fontFamily: T.fontB, fontSize: 14, color: T.black, background: "transparent", minWidth: 0 }} />
+                <span style={{ fontFamily: T.fontB, fontSize: 14, color: T.midGrey, flexShrink: 0 }}>CZK</span>
+              </div>
+            </div>
+          </AccordionSection>
+
+          {/* Sizes */}
+          <AccordionSection title="Sizes" expanded={expanded.includes("sizes")} onToggle={() => toggle("sizes")} summary={summary.sizes} onClear={() => clearSection("sizes")}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {FILTER_SIZES.map(s => {
+                const sel = pendingFilters.sizes.includes(s);
+                return <span key={s} onClick={() => toggleMulti("sizes", s)} style={{ padding: "8px 16px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: sel ? T.white : T.black, background: sel ? T.black : T.white, cursor: "pointer", transition: "all 0.1s" }}>{s}</span>;
+              })}
+            </div>
+          </AccordionSection>
+
+          {/* Material */}
+          <AccordionSection title="Material" expanded={expanded.includes("materials")} onToggle={() => toggle("materials")} summary={summary.materials} onClear={() => clearSection("materials")}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {FILTER_MATERIALS.map(m => {
+                const sel = pendingFilters.materials.includes(m);
+                return <span key={m} onClick={() => toggleMulti("materials", m)} style={{ padding: "8px 16px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: sel ? T.white : T.black, background: sel ? T.black : T.white, cursor: "pointer", transition: "all 0.1s" }}>{m}</span>;
+              })}
+            </div>
+          </AccordionSection>
+
+          {/* Colours */}
+          <AccordionSection title="Colours" expanded={expanded.includes("colors")} onToggle={() => toggle("colors")} summary={summary.colors} onClear={() => clearSection("colors")}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {FILTER_COLORS_LIST.map(({ name, hex }) => {
+                const sel = pendingFilters.colors.includes(name);
+                const isLight = hex === "#d4d4d4" || hex === "#ffffff";
+                return (
+                  <div key={name} onClick={() => toggleMulti("colors", name)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, cursor: "pointer", transition: "border-color 0.1s" }}>
+                    <span style={{ width: 20, height: 20, borderRadius: "50%", background: hex, flexShrink: 0, border: isLight ? "1px solid "+T.lightGrey : "none" }} />
+                    <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.black }}>{name}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </AccordionSection>
+
+          {/* Frame shape */}
+          <AccordionSection title="Frame shape" expanded={expanded.includes("frameShape")} onToggle={() => toggle("frameShape")} summary={summary.frameShape} onClear={() => clearSection("frameShape")}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {FRAME_SHAPES.map(shape => {
+                const sel = pendingFilters.frameShape === shape;
+                return <span key={shape} onClick={() => onChange({ ...pendingFilters, frameShape: sel ? null : shape })} style={{ padding: "8px 16px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: sel ? T.white : T.black, background: sel ? T.black : T.white, cursor: "pointer", transition: "all 0.1s" }}>{shape}</span>;
+              })}
+            </div>
+          </AccordionSection>
+
+          <div style={{ height: 16 }} />
         </div>
 
-        {/* Buttons */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => onApply({ min: localMin, max: localMax })}
-            style={{ flex: 1, padding: "10px 0", background: T.black, color: T.white, border: "none", borderRadius: 8, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Apply</button>
-          <button onClick={() => { setLocalMin(PRICE_MIN); setLocalMax(PRICE_MAX); onReset(); }}
-            style={{ flex: 1, padding: "10px 0", background: T.bgGrey, color: T.darkGrey, border: "none", borderRadius: 8, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer" }}>Reset</button>
+        {/* Sticky footer */}
+        <div style={{ padding: "16px 24px 24px", borderTop: "1px solid "+T.lightGrey, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          {hasAnyPending && (
+            <button onClick={onClearPending}
+              style={{ width: "100%", padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 100, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer" }}>
+              Clear Filters
+            </button>
+          )}
+          <button onClick={onApply}
+            style={{ width: "100%", padding: "14px 0", background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", transition: "opacity 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+            Show {liveCount} bikes
+          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -513,22 +652,31 @@ function Header({ cc }) {
   );
 }
 
-function Filters({ filterOpen, onToggle, filteredCount }) {
+function Toolbar({ onOpenDrawer, hasActiveFilters, onClearFilters, activeCategory, onCategoryChange, totalShowing }) {
   const cats = ["All", "Road", "Gran Fondo", "Gravel"];
-  const total = BIKES.length;
-  const showingText = filteredCount < total ? `Showing ${filteredCount} of ${total} bikes` : `Showing ${total} bikes`;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 32px", borderBottom: "1px solid "+T.bgGrey }}>
+    <div style={{ position: "sticky", top: 56, zIndex: 98, background: T.white, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 32px", height: 52, borderBottom: "1px solid "+T.lightGrey }}>
+      {/* Left */}
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <span onClick={onToggle} style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: filterOpen ? T.black : T.darkGrey, cursor: "pointer" }}>
-          {filterOpen ? "Hide Filters" : "Show Filters"} {"\u2261"}
+        <span onClick={onOpenDrawer} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, cursor: "pointer" }}>
+          Filter & Sort {"\u2261"}
+          {hasActiveFilters && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#e53935", display: "inline-block" }} />}
         </span>
-        <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.midGrey }}>{showingText}</span>
+        {hasActiveFilters && (
+          <span onClick={onClearFilters} style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, cursor: "pointer" }}>
+            Clear Filters {"\u2715"}
+          </span>
+        )}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        {cats.map((c, i) => <span key={c} style={{ padding: "7px 18px", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", background: i === 0 ? T.black : T.white, color: i === 0 ? T.white : T.darkGrey, border: i === 0 ? "1px solid "+T.black : "1px solid "+T.lightGrey }}>{c}</span>)}
+      {/* Center tabs */}
+      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 8 }}>
+        {cats.map(c => {
+          const sel = activeCategory === c;
+          return <span key={c} onClick={() => onCategoryChange(c)} style={{ padding: "7px 18px", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", background: sel ? T.black : T.white, color: sel ? T.white : T.black, border: "1px solid "+T.black, transition: "all 0.15s" }}>{c}</span>;
+        })}
       </div>
-      <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: T.darkGrey, cursor: "pointer" }}>Sort by Default {"\u2261"}</span>
+      {/* Right */}
+      <span style={{ fontFamily: T.fontB, fontSize: 14, color: T.midGrey }}>Showing {totalShowing} bikes</span>
     </div>
   );
 }
@@ -541,25 +689,68 @@ export default function App() {
   const [vari, setVari] = useState(null);
   const [comp, setComp] = useState([]);
   const [modalBike, setModalBike] = useState(null);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
+  const [pendingFilters, setPendingFilters] = useState(EMPTY_FILTERS);
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const openDrawer = () => { setPendingFilters({ ...appliedFilters }); setDrawerOpen(true); };
+  const closeDrawer = () => { setPendingFilters({ ...appliedFilters }); setDrawerOpen(false); };
+  const applyFilters = () => { setAppliedFilters({ ...pendingFilters }); setDrawerOpen(false); };
+  const clearAllFilters = () => { setAppliedFilters(EMPTY_FILTERS); setPendingFilters(EMPTY_FILTERS); setDrawerOpen(false); };
 
   const variantPassesFilter = (v) => {
-    const ep = v.salePrice !== null ? v.salePrice : v.price;
-    if (priceFilter.min !== null && ep < priceFilter.min) return false;
-    if (priceFilter.max !== null && ep > priceFilter.max) return false;
+    const ep = effectivePrice(v);
+    if (appliedFilters.price.min !== null && ep < appliedFilters.price.min) return false;
+    if (appliedFilters.price.max !== null && ep > appliedFilters.price.max) return false;
+    if (appliedFilters.sizes.length > 0 && !appliedFilters.sizes.some(s => v.sizes?.includes(s))) return false;
+    if (appliedFilters.materials.length > 0 && !appliedFilters.materials.includes(getMaterial(v.frame || ""))) return false;
+    if (appliedFilters.colors.length > 0 && !v.colors?.some(c => appliedFilters.colors.includes(COLOR_MAP[c] || "Other"))) return false;
     return true;
   };
+
+  const bikePassesFilter = (b) => {
+    if (activeCategory !== "All" && b.category !== activeCategory) return false;
+    if (appliedFilters.frameShape && b.category !== appliedFilters.frameShape) return false;
+    return b.variants.some(variantPassesFilter);
+  };
+
   const getPassingVariants = (b) => b.variants.filter(variantPassesFilter);
-  const filteredBikes = BIKES.filter(b => getPassingVariants(b).length > 0);
+  const filteredBikes = BIKES.filter(bikePassesFilter);
+  const sortedBikes = [...filteredBikes].sort((a, b) => {
+    if (appliedFilters.sort === "price-desc") return effectivePrice(b.variants[0]) - effectivePrice(a.variants[0]);
+    if (appliedFilters.sort === "price-asc") return effectivePrice(a.variants[0]) - effectivePrice(b.variants[0]);
+    return 0;
+  });
+
+  // Live count driven by pendingFilters
+  const pendingCount = BIKES.filter(b => {
+    if (activeCategory !== "All" && b.category !== activeCategory) return false;
+    if (pendingFilters.frameShape && b.category !== pendingFilters.frameShape) return false;
+    return b.variants.some(v => {
+      const ep = effectivePrice(v);
+      if (pendingFilters.price.min !== null && ep < pendingFilters.price.min) return false;
+      if (pendingFilters.price.max !== null && ep > pendingFilters.price.max) return false;
+      if (pendingFilters.sizes.length > 0 && !pendingFilters.sizes.some(s => v.sizes?.includes(s))) return false;
+      if (pendingFilters.materials.length > 0 && !pendingFilters.materials.includes(getMaterial(v.frame || ""))) return false;
+      if (pendingFilters.colors.length > 0 && !v.colors?.some(c => pendingFilters.colors.includes(COLOR_MAP[c] || "Other"))) return false;
+      return true;
+    });
+  }).length;
+
+  const hasActiveFilters =
+    appliedFilters.price.min !== null || appliedFilters.price.max !== null ||
+    appliedFilters.sizes.length > 0 || appliedFilters.materials.length > 0 ||
+    appliedFilters.colors.length > 0 || appliedFilters.frameShape !== null ||
+    appliedFilters.sort !== "recommended";
 
   const go = (p) => { setPg(p); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   const selBike = (b) => {
     const passing = getPassingVariants(b);
+    if (passing.length === 0) return;
     if (passing.length === 1) { setVari(passing[0]); setBike(b); go("detail"); }
-    else if (passing.length === 0) return;
-    else { setModalBike(b); if (filterOpen) setFilterOpen(false); }
+    else { setModalBike(b); }
   };
 
   const toggleComp = (id) => setComp(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
@@ -578,21 +769,25 @@ export default function App() {
       <Header cc={comp.length} />
       {pg === "grid" && (
         <>
-          <Filters filterOpen={filterOpen} onToggle={() => setFilterOpen(f => !f)} filteredCount={filteredBikes.length} />
-          {filterOpen && (
-            <>
-              <div onClick={() => setFilterOpen(false)} style={{ position: "fixed", inset: 0, top: 56, background: "rgba(0,0,0,0.25)", zIndex: 199 }} />
-              <FilterPanel
-                onClose={() => setFilterOpen(false)}
-                priceFilter={priceFilter}
-                onApply={(f) => setPriceFilter(f)}
-                onReset={() => setPriceFilter({ min: null, max: null })}
-                filteredCount={filteredBikes.length}
-              />
-            </>
-          )}
+          <Toolbar
+            onOpenDrawer={openDrawer}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearAllFilters}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+            totalShowing={filteredBikes.length}
+          />
+          <FilterDrawer
+            open={drawerOpen}
+            onClose={closeDrawer}
+            pendingFilters={pendingFilters}
+            onChange={setPendingFilters}
+            liveCount={pendingCount}
+            onApply={applyFilters}
+            onClearPending={() => setPendingFilters(EMPTY_FILTERS)}
+          />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, padding: "32px 32px 80px" }}>
-            {filteredBikes.map(b => {
+            {sortedBikes.map(b => {
               const passing = getPassingVariants(b);
               return <ProductCard key={b.id} bike={b} displayVariants={passing} onSelect={selBike} onCompare={toggleComp} isCompared={comp.includes(passing[0].id)} />;
             })}
