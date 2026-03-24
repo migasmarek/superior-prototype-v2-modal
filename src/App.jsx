@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { BIKE_SIZES, MANUFACTURED_SIZES, getSizeAvailability, getDealersForSelection } from "./mockDealers.js";
 
 const IMG_XR97_OLD = "/images/xr97-old.png";
 const IMG_XR97_NEW = "/images/xr97-new.png";
@@ -7,7 +8,7 @@ const IMG_BIKE_B = "/images/bike-b.png";
 
 const T = {
   black: "#000000", darkGrey: "#5a5a5a", midGrey: "#979797", lightGrey: "#d8d8d8",
-  bgGrey: "#f9f9f9", white: "#ffffff", sale: "#e10000", lightYellow: "#fff6d1",
+  bgGrey: "#f9f9f9", white: "#ffffff", sale: "#e10000", green: "#2E7D32", lightYellow: "#fff6d1",
   fontH: "'DM Sans', sans-serif", fontB: "'DM Sans', sans-serif", fontM: "'Space Mono', monospace",
 };
 
@@ -55,6 +56,10 @@ const salePct = (orig, sale) => Math.round((1 - sale / orig) * 100);
 const COLOR_MAP = {
   "#000": "Black", "#111": "Black", "#1a1a2e": "Black",
   "#cc0000": "Red", "#d4d4d4": "White", "#4a1520": "Brown",
+};
+const COLOR_ID_MAP = {
+  "#cc0000": "red", "#1a1a2e": "blue", "#d4d4d4": "white",
+  "#111": "black", "#4a1520": "brown",
 };
 const getMaterial = (frame) => {
   if (!frame) return "Other";
@@ -490,11 +495,181 @@ function VariantModal({ bike, onClose, onSelectVariant, compared, onCompare, var
   );
 }
 
+// ─── Dealer + Reservation Components ────────────────────────────────────────
+
+function DealerCard({ dealer, colorName, sizeId, onReserve }) {
+  const available = dealer.availability === "available";
+  return (
+    <div style={{ border: "1px solid #E8E8E8", borderRadius: 8, padding: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
+        <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black }}>{dealer.name}</div>
+        {available ? (
+          <button onClick={() => onReserve(dealer)}
+            style={{ background: T.black, color: T.white, border: "none", borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+            Reserve {"\u2192"}
+          </button>
+        ) : (
+          <a href={"tel:"+dealer.phone}
+            style={{ background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, textDecoration: "none", whiteSpace: "nowrap" }}>
+            Contact {"\u2192"}
+          </a>
+        )}
+      </div>
+      <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, marginBottom: 3 }}>{"\ud83d\udccd"} {dealer.address}</div>
+      <a href={"tel:"+dealer.phone} style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, textDecoration: "none", display: "block", marginBottom: 10 }}>{"\ud83d\udcde"} {dealer.phone}</a>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: available ? T.green : T.midGrey, flexShrink: 0 }} />
+        {available ? (
+          <>
+            <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.green }}>In stock</span>
+            <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>{"\u00b7"} {colorName}, Size {sizeId}</span>
+          </>
+        ) : (
+          <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>Availability unknown — contact dealer</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DealerList({ colorId, colorName, sizeId, onReserve }) {
+  const [showAll, setShowAll] = useState(false);
+  const { dealers, allConnectedOutOfStock } = getDealersForSelection(colorId, sizeId);
+  const displayDealers = allConnectedOutOfStock
+    ? dealers.filter(d => d.availability === "unknown")
+    : dealers.filter(d => d.availability !== "unavailable");
+  const visible = showAll ? displayDealers : displayDealers.slice(0, 4);
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      {allConnectedOutOfStock && (
+        <div style={{ background: T.bgGrey, padding: 16, borderRadius: 8, marginBottom: 12, fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, lineHeight: 1.5 }}>
+          This combination is not currently available at dealers with live stock data. It may still be available — contact a dealer directly.
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {visible.map(d => <DealerCard key={d.id} dealer={d} colorName={colorName} sizeId={sizeId} onReserve={onReserve} />)}
+      </div>
+      {!showAll && displayDealers.length > 4 && (
+        <span onClick={() => setShowAll(true)}
+          style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 500, color: T.black, cursor: "pointer", display: "inline-block", marginTop: 10 }}
+          onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
+          onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}>
+          Show all {displayDealers.length} dealers
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ReservationDrawer({ dealer, variant, family, colorName, sizeId, onClose }) {
+  const [agreed, setAgreed] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const onSale = variant.salePrice !== null;
+  const price = onSale ? variant.salePrice : variant.price;
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [onClose]);
+
+  const handleSubmit = () => { setSubmitted(true); setTimeout(() => onClose(), 2000); };
+
+  const inputStyle = { width: "100%", border: "1px solid "+T.lightGrey, borderRadius: 4, padding: 12, fontSize: 14, fontFamily: T.fontB, color: T.black, boxSizing: "border-box", outline: "none" };
+  const labelStyle = { fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 6 };
+
+  return (
+    <>
+      <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}.res-inp:focus{border-color:#000!important}`}</style>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 1099, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }} />
+      <div style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: T.white, zIndex: 1100, overflowY: "auto", padding: "32px 32px 48px", boxSizing: "border-box", animation: "slideInRight 0.3s ease" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h2 style={{ fontFamily: T.fontH, fontSize: 20, fontWeight: 600, color: T.black, margin: 0 }}>Reserve this bike</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: T.black, padding: 4, lineHeight: 1 }}>{"\u2715"}</button>
+        </div>
+        <div style={{ borderTop: "1px solid #E8E8E8", marginBottom: 24 }} />
+
+        {/* Bike summary */}
+        <div style={{ background: T.bgGrey, borderRadius: 8, padding: 16, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div>
+            <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, marginBottom: 4 }}>{family}</div>
+            <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, marginBottom: 6 }}>{colorName} {"\u00b7"} Size {sizeId}</div>
+            <div style={{ fontFamily: T.fontM, fontSize: 16, color: T.black }}>{fmt(price)} CZK</div>
+          </div>
+          <img src={variant.img} alt="" style={{ width: 80, height: 60, objectFit: "contain", mixBlendMode: "multiply", flexShrink: 0 }} />
+        </div>
+
+        {/* Dealer */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Reserving at:</div>
+          <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black, marginBottom: 2 }}>{dealer.name}</div>
+          <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>{dealer.address}</div>
+        </div>
+        <div style={{ borderTop: "1px solid #E8E8E8", marginBottom: 24 }} />
+
+        {submitted ? (
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>{"\u2713"}</div>
+            <div style={{ fontFamily: T.fontH, fontSize: 20, fontWeight: 570, color: T.black }}>Reservation sent!</div>
+            <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, marginTop: 8 }}>The dealer will contact you shortly.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+              {[
+                { label: "Name", type: "text", ph: "Jan" },
+                { label: "Surname", type: "text", ph: "Nov\u00e1k" },
+                { label: "Street", type: "text", ph: "Vinohrads\u00e1 123" },
+                { label: "City", type: "text", ph: "Praha" },
+                { label: "ZIP", type: "text", ph: "110 00" },
+                { label: "Email", type: "email", ph: "jan@email.cz" },
+                { label: "Phone", type: "tel", ph: "+420 123 456 789" },
+              ].map(f => (
+                <div key={f.label}>
+                  <label style={labelStyle}>{f.label}</label>
+                  <input type={f.type} placeholder={f.ph} className="res-inp" style={inputStyle} />
+                </div>
+              ))}
+              <div>
+                <label style={labelStyle}>Message for dealer</label>
+                <textarea rows={3} placeholder="Any questions or notes for the dealer..." className="res-inp" style={{ ...inputStyle, resize: "vertical" }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 24 }}>
+              <div onClick={() => setAgreed(!agreed)}
+                style={{ width: 18, height: 18, border: "1px solid "+(agreed ? T.black : T.lightGrey), borderRadius: 3, background: agreed ? T.black : T.white, flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                {agreed && <span style={{ color: T.white, fontSize: 11, lineHeight: 1 }}>{"\u2713"}</span>}
+              </div>
+              <span style={{ fontFamily: T.fontB, fontSize: 13, color: T.darkGrey }}>
+                I agree with the <span style={{ textDecoration: "underline", cursor: "pointer" }}>terms and conditions</span> of reservation
+              </span>
+            </div>
+
+            <button onClick={handleSubmit}
+              style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", marginBottom: 32, transition: "background 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#333"}
+              onMouseLeave={e => e.currentTarget.style.background = T.black}>
+              Confirm reservation
+            </button>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── Detail Page ────────────────────────────────────────────────────────────
 
 function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantPassesFilter }) {
   const [sz, setSz] = useState(null);
   const [selColor, setSelColor] = useState(variant.colors[0]);
+  const [reserveDealer, setReserveDealer] = useState(null);
+  const colorId = COLOR_ID_MAP[selColor] || "unknown";
+  const colorName = COLOR_MAP[selColor] || selColor;
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
   const category = bike?.category || "";
@@ -592,7 +767,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
             <div style={{ fontFamily: T.fontB, fontSize: 11, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Color</div>
             <div style={{ display: "flex", gap: 6 }}>
               {variant.colors.map((c, i) => (
-                <span key={i} onClick={() => setSelColor(c)}
+                <span key={i} onClick={() => { setSelColor(c); setSz(null); setReserveDealer(null); }}
                   style={{ display: "inline-block", padding: 3, borderRadius: "50%", border: selColor === c ? "2px solid "+T.black : "2px solid transparent", cursor: "pointer", transition: "border-color 0.15s" }}>
                   <span style={{ display: "block", width: 22, height: 22, borderRadius: "50%", background: c, border: (c==="#d4d4d4"||c==="#ffffff") ? "1px solid "+T.lightGrey : "none" }} />
                 </span>
@@ -600,16 +775,49 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
             </div>
           </div>
 
-          {/* Size selector */}
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ fontFamily: T.fontB, fontSize: 11, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Size</div>
+          {/* Size selector with stock indicators */}
+          <div style={{ marginBottom: sz ? 16 : 28 }}>
+            <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Select size</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {(variant.sizes || ["S","M","L","XL"]).map(s => (
-                <span key={s} onClick={() => setSz(s)}
-                  style={{ padding: "8px 16px", border: sz === s ? "2px solid "+T.black : "1px solid "+T.lightGrey, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: sz === s ? 570 : 400, cursor: "pointer", color: T.black, transition: "border-color 0.15s" }}>{s}</span>
-              ))}
+              {BIKE_SIZES.map(s => {
+                const avail = getSizeAvailability(colorId, s);
+                const notMfg = avail === "not-manufactured";
+                const inStock = avail === "in-stock";
+                const isSel = sz === s;
+                return (
+                  <div key={s} style={{ position: "relative" }}>
+                    <span
+                      onClick={notMfg ? undefined : () => setSz(isSel ? null : s)}
+                      style={{
+                        display: "inline-block", padding: "8px 16px", borderRadius: 4,
+                        fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
+                        border: notMfg ? "1px solid "+T.bgGrey : isSel ? "2px solid "+T.black : "1px solid "+T.lightGrey,
+                        background: notMfg ? T.bgGrey : isSel ? T.black : T.white,
+                        color: notMfg ? T.lightGrey : isSel ? T.white : T.black,
+                        cursor: notMfg ? "not-allowed" : "pointer",
+                        transition: "border-color 0.15s, background 0.15s",
+                        userSelect: "none",
+                      }}
+                      onMouseEnter={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.black; }}
+                      onMouseLeave={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.lightGrey; }}>
+                      {s}
+                    </span>
+                    {inStock && (
+                      <span style={{ position: "absolute", top: -2, right: -2, width: 6, height: 6, borderRadius: "50%", background: T.green, border: "1.5px solid "+T.white, pointerEvents: "none" }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
+
+          {/* Dealer list — expands when size is selected */}
+          {sz && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Available at dealers</div>
+              <DealerList colorId={colorId} colorName={colorName} sizeId={sz} onReserve={setReserveDealer} />
+            </div>
+          )}
 
           {/* CTAs */}
           <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
@@ -647,6 +855,18 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           })}
         </div>
       </div>
+
+      {/* Reservation drawer */}
+      {reserveDealer && (
+        <ReservationDrawer
+          dealer={reserveDealer}
+          variant={variant}
+          family={family}
+          colorName={colorName}
+          sizeId={sz}
+          onClose={() => setReserveDealer(null)}
+        />
+      )}
     </div>
   );
 }
