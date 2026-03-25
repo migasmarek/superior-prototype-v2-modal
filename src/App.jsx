@@ -503,7 +503,7 @@ function DealerCard({ dealer, colorName, sizeId, onReserve }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
         <div style={{ fontFamily: T.fontB, fontSize: 16, fontWeight: 570, color: T.black }}>{dealer.name}</div>
         <button onClick={() => onReserve(dealer)}
-          style={{ background: T.black, color: T.white, border: "none", borderRadius: 4, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
+          style={{ background: T.black, color: T.white, border: "none", borderRadius: 100, padding: "10px 20px", fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap", transition: "opacity 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
           Reserve {"\u2192"}
         </button>
@@ -636,7 +636,7 @@ function ReservationDrawer({ dealer, variant, family, colorName, sizeId, onClose
             </div>
 
             <button onClick={handleSubmit}
-              style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", marginBottom: 32, transition: "background 0.15s" }}
+              style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", marginBottom: 32, transition: "background 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.background = "#333"}
               onMouseLeave={e => e.currentTarget.style.background = T.black}>
               Confirm reservation
@@ -692,7 +692,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {!isCzech ? (
             <button onClick={handleFindDealer}
-              style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
               Find a dealer {"\u2192"}
             </button>
           ) : sz && (
@@ -702,12 +702,12 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
               </span>
               {stickyHasStock ? (
                 <button onClick={handleStickyReserve}
-                  style={{ padding: "8px 16px", background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  style={{ padding: "8px 16px", background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Reserve {"\u2192"}
                 </button>
               ) : (
                 <button onClick={handleFindDealer}
-                  style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Find a dealer {"\u2192"}
                 </button>
               )}
@@ -802,8 +802,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           <div style={{ marginBottom: (isCzech && sz) ? 16 : 28 }}>
             <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>{isCzech ? "Select size" : "Sizes"}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {BIKE_SIZES.map(s => {
-                const notMfg = !MANUFACTURED_SIZES.includes(s);
+              {MANUFACTURED_SIZES.map(s => {
                 if (isCzech) {
                   const avail = getSizeAvailability(colorId, s);
                   const inStock = avail === "in-stock";
@@ -811,19 +810,19 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
                   return (
                     <div key={s} style={{ position: "relative" }}>
                       <span
-                        onClick={notMfg ? undefined : () => setSz(isSel ? null : s)}
+                        onClick={() => setSz(isSel ? null : s)}
                         style={{
                           display: "inline-block", padding: "8px 16px", borderRadius: 4,
                           fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
-                          border: notMfg ? "1px solid "+T.bgGrey : isSel ? "2px solid "+T.black : "1px solid "+T.lightGrey,
-                          background: notMfg ? T.bgGrey : isSel ? T.black : T.white,
-                          color: notMfg ? T.lightGrey : isSel ? T.white : T.black,
-                          cursor: notMfg ? "not-allowed" : "pointer",
+                          border: isSel ? "2px solid "+T.black : "1px solid "+T.lightGrey,
+                          background: isSel ? T.black : T.white,
+                          color: isSel ? T.white : T.black,
+                          cursor: "pointer",
                           transition: "border-color 0.15s, background 0.15s",
                           userSelect: "none",
                         }}
-                        onMouseEnter={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.black; }}
-                        onMouseLeave={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.lightGrey; }}>
+                        onMouseEnter={e => { if (!isSel) e.currentTarget.style.borderColor = T.black; }}
+                        onMouseLeave={e => { if (!isSel) e.currentTarget.style.borderColor = T.lightGrey; }}>
                         {s}
                       </span>
                       {inStock && (
@@ -836,7 +835,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
                     <span key={s} style={{
                       display: "inline-block", padding: "8px 16px", borderRadius: 4,
                       fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
-                      background: "#F5F5F5", color: notMfg ? T.lightGrey : "#5A5A5A",
+                      background: "#F5F5F5", color: "#5A5A5A",
                       border: "none", cursor: "default", userSelect: "none",
                     }}>
                       {s}
@@ -873,7 +872,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
             {(!isCzech || sz) && (
               <button onClick={handleFindDealer}
-                style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", transition: "background 0.15s" }}
+                style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", transition: "background 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#333"}
                 onMouseLeave={e => e.currentTarget.style.background = T.black}>
                 Find a dealer {"\u2192"}
