@@ -162,7 +162,7 @@ function AccordionSection({ title, expanded, onToggle, summary, onClear, childre
 
 // ─── Filter Drawer ────────────────────────────────────────────────────────────
 
-function FilterDrawer({ open, onClose, pendingFilters, onChange, liveCount, onApply, onClearPending }) {
+function FilterDrawer({ open, onClose, pendingFilters, onChange, liveCount, onApply, onClearPending, isCzech }) {
   const [expanded, setExpanded] = useState([]);
   const toggle = (key) => setExpanded(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key]);
 
@@ -263,15 +263,17 @@ function FilterDrawer({ open, onClose, pendingFilters, onChange, liveCount, onAp
             </div>
           </AccordionSection>
 
-          {/* Sizes */}
-          <AccordionSection title="Sizes" expanded={expanded.includes("sizes")} onToggle={() => toggle("sizes")} summary={summary.sizes} onClear={() => clearSection("sizes")}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {FILTER_SIZES.map(s => {
-                const sel = pendingFilters.sizes.includes(s);
-                return <span key={s} onClick={() => toggleMulti("sizes", s)} style={{ padding: "8px 16px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: sel ? T.white : T.black, background: sel ? T.black : T.white, cursor: "pointer", transition: "all 0.1s" }}>{s}</span>;
-              })}
-            </div>
-          </AccordionSection>
+          {/* Sizes — Czech market only */}
+          {isCzech && (
+            <AccordionSection title="Sizes" expanded={expanded.includes("sizes")} onToggle={() => toggle("sizes")} summary={summary.sizes} onClear={() => clearSection("sizes")}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {FILTER_SIZES.map(s => {
+                  const sel = pendingFilters.sizes.includes(s);
+                  return <span key={s} onClick={() => toggleMulti("sizes", s)} style={{ padding: "8px 16px", border: "1px solid "+(sel ? T.black : T.lightGrey), borderRadius: 100, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, color: sel ? T.white : T.black, background: sel ? T.black : T.white, cursor: "pointer", transition: "all 0.1s" }}>{s}</span>;
+                })}
+              </div>
+            </AccordionSection>
+          )}
 
           {/* Material */}
           <AccordionSection title="Material" expanded={expanded.includes("materials")} onToggle={() => toggle("materials")} summary={summary.materials} onClear={() => clearSection("materials")}>
@@ -1146,7 +1148,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: T.fontB, background: T.white, minHeight: "100vh" }}>
       <Header cc={comp.length} onOpenLocation={() => setLocationModal(true)} selectedCountry={selectedCountry} />
-      {locationModal && <LocationModal onClose={() => setLocationModal(false)} country={selectedCountry} onConfirm={(c) => setSelectedCountry(c)} />}
+      {locationModal && <LocationModal onClose={() => setLocationModal(false)} country={selectedCountry} onConfirm={(c) => { setSelectedCountry(c); if (c !== "Czech Republic") { setAppliedFilters(f => ({ ...f, sizes: [] })); setPendingFilters(f => ({ ...f, sizes: [] })); } }} />}
       {pg === "grid" && (
         <>
           <Toolbar
@@ -1165,6 +1167,7 @@ export default function App() {
             liveCount={pendingCount}
             onApply={applyFilters}
             onClearPending={() => setPendingFilters(EMPTY_FILTERS)}
+            isCzech={isCzech}
           />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, padding: "32px 32px 80px" }}>
             {sortedBikes.map(b => {
