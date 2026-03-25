@@ -521,22 +521,41 @@ function DealerCard({ dealer, colorName, sizeId, onReserve }) {
   );
 }
 
-function DealerList({ colorId, colorName, sizeId, onReserve }) {
-  const { dealers, allConnectedOutOfStock, hasNoDealerData } = getDealersForSelection(colorId, sizeId);
+function DealerList({ colorId, colorName, sizeId, onReserve, onFindDealer }) {
+  const { dealers, hasNoDealerData } = getDealersForSelection(colorId, sizeId);
+  const [showAllHov, setShowAllHov] = useState(false);
+  const [findHov, setFindHov] = useState(false);
+  const CARD_CAP = 3;
+  const visibleDealers = dealers.slice(0, CARD_CAP);
+  const hasMore = dealers.length > CARD_CAP;
 
   return (
     <div style={{ marginTop: 16 }}>
-      {/* Dealer cards — only connected dealers with confirmed stock */}
-      {dealers.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-          {dealers.map(d => <DealerCard key={d.id} dealer={d} colorName={colorName} sizeId={sizeId} onReserve={onReserve} />)}
+      {/* Dealer cards — capped at 3 */}
+      {visibleDealers.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {visibleDealers.map(d => <DealerCard key={d.id} dealer={d} colorName={colorName} sizeId={sizeId} onReserve={onReserve} />)}
         </div>
       )}
 
-      {/* Fallback / supplementary text */}
+      {/* "Show all X dealers →" — only when capped */}
+      {hasMore && (
+        <div onClick={onFindDealer}
+          onMouseEnter={() => setShowAllHov(true)} onMouseLeave={() => setShowAllHov(false)}
+          style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, cursor: "pointer", textDecoration: showAllHov ? "underline" : "none", marginTop: 8, marginBottom: 4 }}>
+          Show all {dealers.length} dealers {"\u2192"}
+        </div>
+      )}
+
+      {/* Supplementary text / fallback */}
       {dealers.length > 0 ? (
-        <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
-          This bike may also be available at other authorized dealers.
+        <div style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: "#5A5A5A", marginTop: 12 }}>
+          This bike may also be available at other authorized dealers.{" "}
+          <span onClick={onFindDealer}
+            onMouseEnter={() => setFindHov(true)} onMouseLeave={() => setFindHov(false)}
+            style={{ fontWeight: 570, color: T.black, cursor: "pointer", textDecoration: findHov ? "underline" : "none" }}>
+            Find a dealer {"\u2192"}
+          </span>
         </div>
       ) : (
         <div style={{ background: T.bgGrey, padding: 20, borderRadius: 8 }}>
@@ -672,6 +691,8 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
     }
   };
   useEffect(() => { if (!isCzech) { setSz(null); setReserveDealer(null); } }, [isCzech]);
+  const currentDealers = (isCzech && sz) ? getDealersForSelection(colorId, sz).dealers : [];
+  const anyInStock = isCzech && MANUFACTURED_SIZES.some(s => getSizeAvailability(colorId, s) === "in-stock");
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
   const category = bike?.category || "";
@@ -802,7 +823,15 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
 
           {/* Size selector / labels */}
           <div style={{ marginBottom: (isCzech && sz) ? 16 : 28 }}>
-            <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>{isCzech ? "Select size" : "Sizes"}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px" }}>{isCzech ? "Select size" : "Sizes"}</div>
+              {anyInStock && (
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, flexShrink: 0 }} />
+                  <span style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 400, color: "#999" }}>Ready to reserve</span>
+                </div>
+              )}
+            </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {MANUFACTURED_SIZES.map(s => {
                 if (isCzech) {
@@ -859,7 +888,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           {isCzech && sz && (
             <div ref={dealerSectionRef} style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Available at dealers</div>
-              <DealerList colorId={colorId} colorName={colorName} sizeId={sz} onReserve={setReserveDealer} />
+              <DealerList colorId={colorId} colorName={colorName} sizeId={sz} onReserve={setReserveDealer} onFindDealer={handleFindDealer} />
             </div>
           )}
 
@@ -872,7 +901,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
 
           {/* CTAs */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-            {(!isCzech || sz) && (
+            {(!isCzech || (sz && currentDealers.length === 0)) && (
               <button onClick={handleFindDealer}
                 style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", transition: "background 0.15s" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#333"}
