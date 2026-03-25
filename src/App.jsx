@@ -519,27 +519,11 @@ function DealerCard({ dealer, colorName, sizeId, onReserve }) {
   );
 }
 
-function FindDealerLink({ onClick }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <span onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, cursor: "pointer", textDecoration: hov ? "underline" : "none" }}>
-      Find a dealer {"\u2192"}
-    </span>
-  );
-}
-
 function DealerList({ colorId, colorName, sizeId, onReserve }) {
-  const [toast, setToast] = useState(false);
   const { dealers, allConnectedOutOfStock, hasNoDealerData } = getDealersForSelection(colorId, sizeId);
 
-  const handleFindDealer = () => {
-    setToast(true);
-    setTimeout(() => setToast(false), 2500);
-  };
-
   return (
-    <div style={{ marginTop: 16, position: "relative" }}>
+    <div style={{ marginTop: 16 }}>
       {/* Dealer cards — only connected dealers with confirmed stock */}
       {dealers.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
@@ -547,29 +531,18 @@ function DealerList({ colorId, colorName, sizeId, onReserve }) {
         </div>
       )}
 
-      {/* Fallback block */}
+      {/* Fallback / supplementary text */}
       {dealers.length > 0 ? (
-        // Some dealers have stock — show brief inline note below cards
-        <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span>This bike may also be available at other authorized dealers.</span>
-          <FindDealerLink onClick={handleFindDealer} />
+        <div style={{ fontFamily: T.fontB, fontSize: 14, color: T.darkGrey }}>
+          This bike may also be available at other authorized dealers.
         </div>
       ) : (
-        // No dealer cards — show message box
         <div style={{ background: T.bgGrey, padding: 20, borderRadius: 8 }}>
-          <p style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.darkGrey, lineHeight: 1.6, margin: "0 0 12px" }}>
+          <p style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.darkGrey, lineHeight: 1.6, margin: 0 }}>
             {hasNoDealerData
               ? "We don\u2019t have live stock data for this combination. It may be available at an authorized dealer."
               : "This combination is not currently in stock at dealers with live availability. It may still be available at other authorized dealers."}
           </p>
-          <FindDealerLink onClick={handleFindDealer} />
-        </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: T.black, color: T.white, padding: "12px 24px", borderRadius: 8, fontFamily: T.fontB, fontSize: 14, zIndex: 2000, pointerEvents: "none" }}>
-          Dealer finder coming soon
         </div>
       )}
     </div>
@@ -677,17 +650,17 @@ function ReservationDrawer({ dealer, variant, family, colorName, sizeId, onClose
 
 // ─── Detail Page ────────────────────────────────────────────────────────────
 
-function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantPassesFilter }) {
+function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantPassesFilter, isCzech }) {
   const [sz, setSz] = useState(null);
   const [selColor, setSelColor] = useState(variant.colors[0]);
   const [reserveDealer, setReserveDealer] = useState(null);
-  const [stickyToast, setStickyToast] = useState(false);
+  const [findDealerToast, setFindDealerToast] = useState(false);
   const dealerSectionRef = useRef(null);
   const colorId = COLOR_ID_MAP[selColor] || "unknown";
   const colorName = COLOR_MAP[selColor] || selColor;
   const stickyHasStock = sz ? getSizeAvailability(colorId, sz) === "in-stock" : false;
   const effectiveVariantPrice = variant.salePrice !== null ? variant.salePrice : variant.price;
-  const handleStickyFindDealer = () => { setStickyToast(true); setTimeout(() => setStickyToast(false), 2500); };
+  const handleFindDealer = () => { setFindDealerToast(true); setTimeout(() => setFindDealerToast(false), 2500); };
   const handleStickyReserve = () => {
     const { dealers } = getDealersForSelection(colorId, sz);
     if (dealers.length === 1) {
@@ -696,6 +669,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
       dealerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   };
+  useEffect(() => { if (!isCzech) { setSz(null); setReserveDealer(null); } }, [isCzech]);
   const onSale = variant.salePrice !== null;
   const pct = onSale ? salePct(variant.price, variant.salePrice) : 0;
   const category = bike?.category || "";
@@ -716,7 +690,12 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
           ))}
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {sz && (
+          {!isCzech ? (
+            <button onClick={handleFindDealer}
+              style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              Find a dealer {"\u2192"}
+            </button>
+          ) : sz && (
             <>
               <span style={{ fontFamily: T.fontB, fontSize: 13, fontWeight: 500, color: T.black, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 300 }}>
                 {family} {"\u00b7"} {colorName}, {sz} {"\u00b7"} {fmt(effectiveVariantPrice)} CZK
@@ -727,7 +706,7 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
                   Reserve {"\u2192"}
                 </button>
               ) : (
-                <button onClick={handleStickyFindDealer}
+                <button onClick={handleFindDealer}
                   style={{ padding: "8px 16px", background: T.white, color: T.black, border: "1px solid "+T.black, borderRadius: 4, fontFamily: T.fontB, fontSize: 13, fontWeight: 570, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Find a dealer {"\u2192"}
                 </button>
@@ -819,67 +798,88 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
             </div>
           </div>
 
-          {/* Size selector with stock indicators */}
-          <div style={{ marginBottom: sz ? 16 : 28 }}>
-            <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>Select size</div>
+          {/* Size selector / labels */}
+          <div style={{ marginBottom: (isCzech && sz) ? 16 : 28 }}>
+            <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>{isCzech ? "Select size" : "Sizes"}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {BIKE_SIZES.map(s => {
-                const avail = getSizeAvailability(colorId, s);
-                const notMfg = avail === "not-manufactured";
-                const inStock = avail === "in-stock";
-                const isSel = sz === s;
-                return (
-                  <div key={s} style={{ position: "relative" }}>
-                    <span
-                      onClick={notMfg ? undefined : () => setSz(isSel ? null : s)}
-                      style={{
-                        display: "inline-block", padding: "8px 16px", borderRadius: 4,
-                        fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
-                        border: notMfg ? "1px solid "+T.bgGrey : isSel ? "2px solid "+T.black : "1px solid "+T.lightGrey,
-                        background: notMfg ? T.bgGrey : isSel ? T.black : T.white,
-                        color: notMfg ? T.lightGrey : isSel ? T.white : T.black,
-                        cursor: notMfg ? "not-allowed" : "pointer",
-                        transition: "border-color 0.15s, background 0.15s",
-                        userSelect: "none",
-                      }}
-                      onMouseEnter={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.black; }}
-                      onMouseLeave={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.lightGrey; }}>
+                const notMfg = !MANUFACTURED_SIZES.includes(s);
+                if (isCzech) {
+                  const avail = getSizeAvailability(colorId, s);
+                  const inStock = avail === "in-stock";
+                  const isSel = sz === s;
+                  return (
+                    <div key={s} style={{ position: "relative" }}>
+                      <span
+                        onClick={notMfg ? undefined : () => setSz(isSel ? null : s)}
+                        style={{
+                          display: "inline-block", padding: "8px 16px", borderRadius: 4,
+                          fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
+                          border: notMfg ? "1px solid "+T.bgGrey : isSel ? "2px solid "+T.black : "1px solid "+T.lightGrey,
+                          background: notMfg ? T.bgGrey : isSel ? T.black : T.white,
+                          color: notMfg ? T.lightGrey : isSel ? T.white : T.black,
+                          cursor: notMfg ? "not-allowed" : "pointer",
+                          transition: "border-color 0.15s, background 0.15s",
+                          userSelect: "none",
+                        }}
+                        onMouseEnter={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.black; }}
+                        onMouseLeave={e => { if (!notMfg && !isSel) e.currentTarget.style.borderColor = T.lightGrey; }}>
+                        {s}
+                      </span>
+                      {inStock && (
+                        <span style={{ position: "absolute", top: -4, right: -4, width: 10, height: 10, borderRadius: "50%", background: T.green, border: "2px solid "+T.white, pointerEvents: "none" }} />
+                      )}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <span key={s} style={{
+                      display: "inline-block", padding: "8px 16px", borderRadius: 4,
+                      fontFamily: T.fontB, fontSize: 14, fontWeight: 500,
+                      background: "#F5F5F5", color: notMfg ? T.lightGrey : "#5A5A5A",
+                      border: "none", cursor: "default", userSelect: "none",
+                    }}>
                       {s}
                     </span>
-                    {inStock && (
-                      <span style={{ position: "absolute", top: -4, right: -4, width: 10, height: 10, borderRadius: "50%", background: T.green, border: "2px solid "+T.white, pointerEvents: "none" }} />
-                    )}
-                  </div>
-                );
+                  );
+                }
               })}
             </div>
           </div>
 
-          {/* Choose size prompt — shown when no size selected */}
-          {!sz && (
+          {/* Choose size prompt — Czech only, when no size selected */}
+          {isCzech && !sz && (
             <div style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 400, color: T.midGrey, marginBottom: 28, animation: "fadeIn 0.2s ease" }}>
               Choose your size to check availability
             </div>
           )}
 
-          {/* Dealer list — expands when size is selected */}
-          {sz && (
-            <div ref={dealerSectionRef} style={{ marginBottom: 24 }}>
+          {/* Dealer list — Czech only, expands when size is selected */}
+          {isCzech && sz && (
+            <div ref={dealerSectionRef} style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 500, color: T.darkGrey, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 4 }}>Available at dealers</div>
               <DealerList colorId={colorId} colorName={colorName} sizeId={sz} onReserve={setReserveDealer} />
             </div>
           )}
 
-          {/* Sticky bar toast */}
-          {stickyToast && (
+          {/* Find dealer toast */}
+          {findDealerToast && (
             <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: T.black, color: T.white, padding: "12px 24px", borderRadius: 8, fontFamily: T.fontB, fontSize: 14, zIndex: 2000, pointerEvents: "none" }}>
               Dealer finder coming soon
             </div>
           )}
 
           {/* CTAs */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
-            <button style={{ flex: 1, padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+            {(!isCzech || sz) && (
+              <button onClick={handleFindDealer}
+                style={{ width: "100%", padding: 14, background: T.black, color: T.white, border: "none", borderRadius: 4, fontFamily: T.fontB, fontSize: 16, fontWeight: 570, cursor: "pointer", transition: "background 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#333"}
+                onMouseLeave={e => e.currentTarget.style.background = T.black}>
+                Find a dealer {"\u2192"}
+              </button>
+            )}
+            <button style={{ padding: "14px 0", background: T.white, color: T.black, border: "1px solid "+T.lightGrey, borderRadius: 100, fontSize: 14, fontWeight: 570, cursor: "pointer", fontFamily: T.fontB, transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = T.black} onMouseLeave={e => e.currentTarget.style.borderColor = T.lightGrey}>Compare</button>
           </div>
 
@@ -932,9 +932,10 @@ function DetailPage({ variant, family, onBack, bike, onCompareVariants, variantP
 const COUNTRIES = ["Czech Republic","Slovakia","Germany","Austria","Poland","Hungary","France","Spain","Italy","United Kingdom","Netherlands","Belgium","Sweden","Norway","Denmark","Finland","Switzerland","Romania","Bulgaria","Croatia","Slovenia","Greece","Portugal"];
 const LANGUAGES = ["English","Čeština","Deutsch","Français","Español","Italiano"];
 
-function LocationModal({ onClose }) {
+function LocationModal({ onClose, country, onConfirm }) {
   const [closeBtnHov, setCloseBtnHov] = useState(false);
   const [confirmHov, setConfirmHov] = useState(false);
+  const [locCountry, setLocCountry] = useState(country || "Czech Republic");
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -970,7 +971,7 @@ function LocationModal({ onClose }) {
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 570, color: T.midGrey, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>Country</div>
           <div style={{ position: "relative" }}>
-            <select defaultValue="Czech Republic" style={selectStyle}>
+            <select value={locCountry} onChange={e => setLocCountry(e.target.value)} style={selectStyle}>
               {COUNTRIES.map(c => <option key={c}>{c}</option>)}
             </select>
             <span style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", color: T.darkGrey, pointerEvents: "none", fontSize: 12 }}>{"\u2228"}</span>
@@ -989,7 +990,7 @@ function LocationModal({ onClose }) {
         </div>
 
         {/* Confirm */}
-        <button onClick={onClose}
+        <button onClick={() => { onConfirm(locCountry); onClose(); }}
           onMouseEnter={() => setConfirmHov(true)} onMouseLeave={() => setConfirmHov(false)}
           style={{ width: "100%", marginTop: 32, padding: 16, background: T.black, color: T.white, border: "none", borderRadius: 100, fontFamily: T.fontB, fontSize: 14, fontWeight: 570, cursor: "pointer", opacity: confirmHov ? 0.85 : 1, transition: "opacity 0.15s" }}>
           Confirm
@@ -1001,7 +1002,10 @@ function LocationModal({ onClose }) {
 
 // ─── Header + Filters ───────────────────────────────────────────────────────
 
-function Header({ cc, onOpenLocation }) {
+const COUNTRY_CODES = { "Czech Republic":"CZ","Slovakia":"SK","Germany":"DE","Austria":"AT","Poland":"PL","Hungary":"HU","France":"FR","Spain":"ES","Italy":"IT","United Kingdom":"GB","Netherlands":"NL","Belgium":"BE","Sweden":"SE","Norway":"NO","Denmark":"DK","Finland":"FI","Switzerland":"CH","Romania":"RO","Bulgaria":"BG","Croatia":"HR","Slovenia":"SI","Greece":"GR","Portugal":"PT" };
+
+function Header({ cc, onOpenLocation, selectedCountry }) {
+  const countryCode = COUNTRY_CODES[selectedCountry] || selectedCountry.slice(0, 2).toUpperCase();
   return (
     <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 64px", height: 56, borderBottom: "1px solid "+T.lightGrey, background: T.white, position: "sticky", top: 0, zIndex: 100 }}>
       <nav style={{ display: "flex", gap: 48, alignItems: "center", fontFamily: T.fontB, fontSize: 14, color: T.black, lineHeight: 1 }}>
@@ -1018,7 +1022,7 @@ function Header({ cc, onOpenLocation }) {
         <span style={{ cursor: "pointer" }}>Search</span>
         <span onClick={onOpenLocation} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", cursor: "pointer", gap: 2 }}>
           <span style={{ fontFamily: T.fontB, fontSize: 12, fontWeight: 400, color: T.midGrey, lineHeight: 1 }}>Location</span>
-          <span style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, lineHeight: 1 }}>CZ / EN</span>
+          <span style={{ fontFamily: T.fontB, fontSize: 14, fontWeight: 570, color: T.black, lineHeight: 1 }}>{countryCode} / EN</span>
         </span>
       </div>
     </header>
@@ -1064,6 +1068,8 @@ export default function App() {
   const [modalBike, setModalBike] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [locationModal, setLocationModal] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("Czech Republic");
+  const isCzech = selectedCountry === "Czech Republic";
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [pendingFilters, setPendingFilters] = useState(EMPTY_FILTERS);
   const [activeCategory, setActiveCategory] = useState("All");
@@ -1140,8 +1146,8 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: T.fontB, background: T.white, minHeight: "100vh" }}>
-      <Header cc={comp.length} onOpenLocation={() => setLocationModal(true)} />
-      {locationModal && <LocationModal onClose={() => setLocationModal(false)} />}
+      <Header cc={comp.length} onOpenLocation={() => setLocationModal(true)} selectedCountry={selectedCountry} />
+      {locationModal && <LocationModal onClose={() => setLocationModal(false)} country={selectedCountry} onConfirm={(c) => setSelectedCountry(c)} />}
       {pg === "grid" && (
         <>
           <Toolbar
@@ -1169,7 +1175,7 @@ export default function App() {
           </div>
         </>
       )}
-      {pg === "detail" && vari && <DetailPage variant={vari} family={bike?.family || vari.name} onBack={back} bike={bike} onCompareVariants={() => setModalBike(bike)} variantPassesFilter={variantPassesFilter} />}
+      {pg === "detail" && vari && <DetailPage variant={vari} family={bike?.family || vari.name} onBack={back} bike={bike} onCompareVariants={() => setModalBike(bike)} variantPassesFilter={variantPassesFilter} isCzech={isCzech} />}
       {modalBike && <VariantModal bike={modalBike} onClose={() => setModalBike(null)} onSelectVariant={selVar} compared={comp} onCompare={toggleComp} variantPassesFilter={variantPassesFilter} />}
     </div>
   );
